@@ -1,3 +1,4 @@
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
@@ -31,7 +32,6 @@ const signUp = async (req, res) => {
 };
 
 // sign in
-
 const signIn = async (req, res) => {
   const { email, password } = req.body;
 
@@ -53,13 +53,16 @@ const signIn = async (req, res) => {
     // valid user data
     const validUser = {
       id: user._id,
+      _id: user._id,
       fullName: user.fullName,
       email: user.email,
+      phone: user.phone || "",
+      photo: user.photo || "",
     };
 
-    // generate JWT token
+    // generate JWT token with longer expiry for persistent login
     const token = jwt.sign(validUser, process.env.secret_key, {
-      expiresIn: "1h",
+      expiresIn: "7d", // Extended to 7 days para sa persistent login
     });
 
     // send back token + user
@@ -77,13 +80,82 @@ const signIn = async (req, res) => {
   }
 };
 
+// NEW: Verify token endpoint para sa persistent login
+const verifyToken = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        message: "No token provided", 
+        isSuccess: false 
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.secret_key);
+    
+    // Optional: Check if user still exists sa database
+    const user = await User.findById(decoded.id || decoded._id);
+    if (!user) {
+      return res.status(404).json({ 
+        message: "User not found", 
+        isSuccess: false 
+      });
+    }
+
+    // Return success with fresh user data
+    const validUser = {
+      id: user._id,
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone || "",
+      photo: user.photo || "",
+    };
+
+    res.status(200).json({
+      message: "Token is valid",
+      isSuccess: true,
+      user: validUser,
+    });
+
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ 
+        message: "Invalid token", 
+        isSuccess: false 
+      });
+    }
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        message: "Token expired", 
+        isSuccess: false 
+      });
+    }
+
+    res.status(500).json({ 
+      message: "Token verification failed", 
+      isSuccess: false 
+    });
+  }
+};
+
 const logout = (req, res) => {
   try {
     // Kung JWT ang gamit, logout ay i-clear lang sa frontend
-    return res.status(200).json({ message: "Logged out successfully" });
+    return res.status(200).json({ 
+      message: "Logged out successfully", 
+      isSuccess: true 
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ 
+      message: "Server error", 
+      isSuccess: false 
+    });
   }
 };
-export { signUp, signIn, logout};
 
+export { signUp, signIn, verifyToken, logout };
