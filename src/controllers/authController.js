@@ -30,12 +30,8 @@ const signUp = async (req, res) => {
   }
 };
 
-const body = {
-  email: "johnirvingeanga@gmail.com",
-  password: "111111",
-};
-
 // sign in
+
 const signIn = async (req, res) => {
   const { email, password } = req.body;
 
@@ -54,23 +50,40 @@ const signIn = async (req, res) => {
       throw error;
     }
 
+    // valid user data
     const validUser = {
       id: user._id,
       fullName: user.fullName,
       email: user.email,
     };
 
-    const userData = jwt.sign(validUser, secret, {
+    // generate JWT token
+    const token = jwt.sign(validUser, process.env.secret_key, {
       expiresIn: "1h",
     });
 
-    res.cookie("salon_token", userData);
-
-    res.status(200).json({ message: "Login successful", isSuccess: true });
+    // send back token + user
+    res.status(200).json({
+      message: "Login successful",
+      isSuccess: true,
+      token,              
+      user: validUser,    
+    });
   } catch (error) {
-    res.status(error.status || 500).json({ message: error.message, isSuccess: false });
+    res.status(error.status || 500).json({
+      message: error.message,
+      isSuccess: false,
+    });
   }
 };
 
-export { signUp, signIn };
+const logout = (req, res) => {
+  try {
+    // Kung JWT ang gamit, logout ay i-clear lang sa frontend
+    return res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+export { signUp, signIn, logout};
 
