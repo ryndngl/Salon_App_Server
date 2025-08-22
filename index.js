@@ -4,7 +4,6 @@ const app = express();
 import "dotenv/config";
 import cookieParser from "cookie-parser";
 import authRoute from "./src/routes/auth.js";
-import homeRoute from "./src/routes/home.js";
 import userRoute from "./src/routes/users.js"; 
 
 // PORT
@@ -22,7 +21,6 @@ await connect();
 
 // routes
 app.use("/api/auth", authRoute);
-app.use("/api/home", homeRoute);
 app.use("/api/users", userRoute);
 
 app.listen(PORT, () => {
