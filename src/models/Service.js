@@ -1,6 +1,5 @@
 // src/models/Service.js - ES6 version for your project structure
 import mongoose from 'mongoose';
-
 // Schema for individual styles within a service
 const StyleSchema = new mongoose.Schema({
   id: {
