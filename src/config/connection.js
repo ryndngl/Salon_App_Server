@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-const uri = process.env.compass;
+const uri = process.env.MONGODB_URI;
 async function connect() {
   try {
     await mongoose.connect(uri);

@@ -56,7 +56,7 @@ const ServiceSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    unique: true
+    unique: true // already creates an index, no need to duplicate
   },
   description: {
     type: String,
@@ -84,9 +84,7 @@ ServiceSchema.pre('save', function(next) {
   // Also update updatedAt for modified styles
   if (this.isModified('styles')) {
     this.styles.forEach(style => {
-      if (style.isNew || style.isModified()) {
-        style.updatedAt = Date.now();
-      }
+      style.updatedAt = Date.now();
     });
   }
   
@@ -94,7 +92,7 @@ ServiceSchema.pre('save', function(next) {
 });
 
 // Create indexes for better query performance
-ServiceSchema.index({ name: 1 });
+// Removed duplicate { name: 1 }
 ServiceSchema.index({ 'styles.name': 1 });
 ServiceSchema.index({ 'styles.category': 1 });
 ServiceSchema.index({ isActive: 1 });
@@ -119,7 +117,7 @@ ServiceSchema.methods.addStyle = function(styleData) {
 };
 
 ServiceSchema.methods.updateStyle = function(styleId, updateData) {
-  const style = this.styles.id(styleId);
+  const style = this.styles.find(s => s.id === styleId); // fixed .id() issue
   if (!style) {
     throw new Error('Style not found');
   }
@@ -131,7 +129,7 @@ ServiceSchema.methods.updateStyle = function(styleId, updateData) {
 };
 
 ServiceSchema.methods.removeStyle = function(styleId) {
-  const style = this.styles.id(styleId);
+  const style = this.styles.find(s => s.id === styleId); // fixed .id() issue
   if (!style) {
     throw new Error('Style not found');
   }

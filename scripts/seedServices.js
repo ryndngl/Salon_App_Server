@@ -783,7 +783,7 @@ const servicesData = [
 const seedServices = async () => {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/salon_booking');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Salon_DB');
     
     console.log('Connected to MongoDB');
     

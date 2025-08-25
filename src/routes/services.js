@@ -4,7 +4,9 @@ import Service from '../models/Service.js';
 
 const router = express.Router();
 
+// ============================
 // GET all services
+// ============================
 router.get('/', async (req, res) => {
   try {
     const services = await Service.find({ isActive: true });
@@ -15,7 +17,9 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ============================
 // GET service by ID
+// ============================
 router.get('/id/:id', async (req, res) => {
   try {
     const service = await Service.findById(req.params.id);
@@ -29,7 +33,9 @@ router.get('/id/:id', async (req, res) => {
   }
 });
 
+// ============================
 // GET service by name
+// ============================
 router.get('/name/:serviceName', async (req, res) => {
   try {
     const serviceName = decodeURIComponent(req.params.serviceName);
@@ -49,10 +55,12 @@ router.get('/name/:serviceName', async (req, res) => {
   }
 });
 
-// GET styles by service and category (for filtered results)
-router.get('/:serviceName/styles/:category?', async (req, res) => {
+// ============================
+// GET styles by service (no category filter)
+// ============================
+router.get('/:serviceName/styles', async (req, res) => {
   try {
-    const { serviceName, category } = req.params;
+    const { serviceName } = req.params;
     
     const service = await Service.findOne({ 
       name: { $regex: new RegExp(`^${serviceName}$`, 'i') },
@@ -64,12 +72,6 @@ router.get('/:serviceName/styles/:category?', async (req, res) => {
     }
 
     let filteredStyles = service.styles.filter(style => style.isActive !== false);
-    
-    if (category) {
-      filteredStyles = filteredStyles.filter(style => 
-        style.category && style.category.toLowerCase() === category.toLowerCase()
-      );
-    }
 
     res.json({
       serviceName: service.name,
@@ -83,7 +85,43 @@ router.get('/:serviceName/styles/:category?', async (req, res) => {
   }
 });
 
+// ============================
+// GET styles by service + category
+// ============================
+router.get('/:serviceName/styles/:category', async (req, res) => {
+  try {
+    const { serviceName, category } = req.params;
+    
+    const service = await Service.findOne({ 
+      name: { $regex: new RegExp(`^${serviceName}$`, 'i') },
+      isActive: true
+    });
+    
+    if (!service) {
+      return res.status(404).json({ message: `Service '${serviceName}' not found` });
+    }
+
+    let filteredStyles = service.styles.filter(style => style.isActive !== false);
+
+    filteredStyles = filteredStyles.filter(style => 
+      style.category && style.category.toLowerCase() === category.toLowerCase()
+    );
+
+    res.json({
+      serviceName: service.name,
+      serviceId: service._id,
+      styles: filteredStyles,
+      totalStyles: filteredStyles.length
+    });
+  } catch (error) {
+    console.error('Error fetching styles:', error);
+    res.status(500).json({ message: 'Failed to fetch styles', error: error.message });
+  }
+});
+
+// ============================
 // Search styles across all services
+// ============================
 router.get('/search/styles', async (req, res) => {
   try {
     const { query, limit = 50 } = req.query;
@@ -112,7 +150,6 @@ router.get('/search/styles', async (req, res) => {
       results.push(...matchingStyles);
     }
 
-    // Limit results to prevent overwhelming the client
     const limitedResults = results.slice(0, parseInt(limit));
 
     res.json({
@@ -127,12 +164,13 @@ router.get('/search/styles', async (req, res) => {
   }
 });
 
-// POST - Create new service (for your admin desktop app)
+// ============================
+// POST - Create new service
+// ============================
 router.post('/', async (req, res) => {
   try {
     const { name, description, styles } = req.body;
     
-    // Check if service already exists
     const existingService = await Service.findOne({ 
       name: { $regex: new RegExp(`^${name}$`, 'i') }
     });
@@ -141,7 +179,6 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Service with this name already exists' });
     }
 
-    // Get the highest ID and increment
     const lastService = await Service.findOne().sort({ id: -1 });
     const nextId = lastService ? lastService.id + 1 : 1;
 
@@ -163,7 +200,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT - Update service (for your admin desktop app)
+// ============================
+// PUT - Update service
+// ============================
 router.put('/id/:id', async (req, res) => {
   try {
     const service = await Service.findByIdAndUpdate(
@@ -189,7 +228,9 @@ router.put('/id/:id', async (req, res) => {
   }
 });
 
+// ============================
 // PUT - Add style to service
+// ============================
 router.put('/:serviceName/styles', async (req, res) => {
   try {
     const serviceName = decodeURIComponent(req.params.serviceName);
@@ -203,7 +244,6 @@ router.put('/:serviceName/styles', async (req, res) => {
       return res.status(404).json({ message: `Service '${serviceName}' not found` });
     }
 
-    // Get the highest style ID in this service and increment
     const maxStyleId = service.styles.reduce((max, style) => 
       style.id > max ? style.id : max, 0
     );
@@ -225,7 +265,9 @@ router.put('/:serviceName/styles', async (req, res) => {
   }
 });
 
-// DELETE service (soft delete - for your admin desktop app)
+// ============================
+// DELETE service (soft delete)
+// ============================
 router.delete('/id/:id', async (req, res) => {
   try {
     const service = await Service.findByIdAndUpdate(
@@ -251,7 +293,9 @@ router.delete('/id/:id', async (req, res) => {
   }
 });
 
-// GET service categories (useful for admin app)
+// ============================
+// GET service categories
+// ============================
 router.get('/categories/:serviceName', async (req, res) => {
   try {
     const serviceName = decodeURIComponent(req.params.serviceName);
