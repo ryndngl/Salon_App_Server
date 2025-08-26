@@ -334,427 +334,424 @@ const servicesData = [
     name: "Hair Color",
     description: "Professional hair coloring services",
     styles: [
-      // Root Touch Up
+      // Root Touch Up (400 series)
       {
-        id: 1,
+        id: 401,
         name: "Medium Brown",
         category: "Root Touch Up",
         price: 499,
         description: "Ideal for covering roots on medium brown hair.",
-        image: "/images/haircolor/medium-brown.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145563/Medium_Brown_yhgczj.webp",
       },
        {
-        id: 2,
+        id: 402,
         name: "Light Blonde",
         category: "Root Touch Up",
         price: 499,
         description:
           "Used to seamlessly blend darker roots into light blonde hair.",
-        image: "/images/haircolor/light-blonde.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145560/Light_Blonde_i2kv5l.webp",
       },
       {
-        id: 3,
+        id: 403,
         name: "Black",
         category: "Root Touch Up",
         price: 499,
         description:
           " Perfect for concealing regrowth on natural or dyed black hair.",
-        image: "/images/hair-color/black.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145562/Black_jdkjgg.webp",
       },
       {
-        id: 4,
+        id: 404,
         name: "Auburn Tones",
         category: "Root Touch Up",
         price: 499,
         description:
           "Designed to match and blend with reddish-brown auburn hair colors.",
-        image: "/images/haircolor/auburn-tones.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145559/Auburn_tones_vqb1ni.webp",
       },
       {
-        id: 5,
+        id: 405,
         name: "Dark Brown",
         category: "Root Touch Up",
         price: 499,
         description: "For quick and easy root coverage on dark brown hair.",
-        image: "/images/haircolor/dark-brown.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145561/Dark_Brown_g6djp0.webp",
       },
 
-      // FULL HAIR CATEGORY
+      // Full Hair (500 series)
       {
-        id: 1,
+        id: 501,
         name: "Inky Grey",
         category: "Full Hair",
         price: 699,
         description: "A deep grey shade with a sleek and mysterious allure.",
-        image: "/images/haircolor/inky-grey.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145579/Ink_Grey_kdbfc3.webp",
       },
       {
-        id: 2,
+        id: 502,
         name: "Blonde",
         category: "Full Hair",
         price: 699,
         description:
           "A bright, golden tone that adds warmth and radiance to your look.",
-        image: "/images/haircolor/blonde.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145580/Blonde_raisqo.webp",
       },
       {
-        id: 3,
+        id: 503,
         name: "Purple",
         category: "Full Hair",
         price: 699,
         description: "Bold and playful purple for a unique and creative style.",
-        image: "/images/haircolor/purple.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145579/Purple_bbllym.webp",
       },
       {
-        id: 4,
+        id: 504,
         name: "Chestnut Brown",
         category: "Full Hair",
         price: 699,
         description: "A warm brown shade with subtle reddish undertones.",
-        image: "/images/haircolor/chestnut-brown.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145581/Chestnut_Brown_pziqoi.webp",
       },
       {
-        id: 5,
+        id: 505,
         name: "Plum",
         category: "Full Hair",
         price: 699,
         description:
           "A rich, deep purple shade that can have either reddish or bluish undertones for a bold and dramatic look.",
-        image: "/assets/haircolor/plum.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145578/Plum_kctix1.webp",
       },
       {
-        id: 6,
+        id: 506,
         name: "Light Golden Brown",
         category: "Full Hair",
         price: 699,
         description:
           "A warm, light brown shade infused with subtle golden tones for a soft and luminous finish.",
-        image: "/images/haircolor/light-golden-brown.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145612/Light_Golden_Brown_ltndjw.webp",
       },
       {
-        id: 7,
+        id: 507,
         name: "Ember",
         category: "Full Hair",
         price: 699,
         description:
           "A fiery, reddish-orange color with warm undertones, giving your hair a vibrant, glowing effect.",
-        image: "/images/haircolor/ember.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145577/Ember_rbd2bc.webp",
       },
-      // HIGHLIGHT CATEGORY
+      // Hightlight (600 series)
       {
-        id: 1,
+        id: 601,
         name: "Money Piece",
         category: "Highlight",
         price: 499,
         description:
           "Face-framing highlights that brighten and enhance your look.",
-        image: "/images/haircolor/money-piece.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145569/Money_Piece_mykohp.webp",
       },
       {
-        id: 2,
+        id: 602,
         name: "Copper",
         category: "Highlight",
         price: 499,
         description: "Vibrant copper streaks that add warmth and dimension.",
-        image: "/images/haircolor/copper.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145665/Copper_Highlights_lzov3i.webp",
       },
       {
-        id: 3,
+        id: 603,
         name: "Blue",
         category: "Highlight",
         price: 499,
         description:
           "Bold and vibrant blue for a standout, creative statement.",
-        image: "/images/haircolor/blue.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145574/Blue_Hair_c4wdec.webp",
       },
       {
-        id: 4,
+        id: 604,
         name: "Cherry Red",
         category: "Highlight",
         price: 499,
         description:
           "Bright, eye-catching red with a playful and daring appeal.",
-        image: "/images/haircolor/cherry-red.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145571/Cherry_Red_k8moqt.webp",
       },
       {
-        id: 5,
+        id: 605,
         name: "Honey Blonde",
         category: "Highlight",
         price: 499,
         description:
           "This highlight provides a warm, golden blonde color that brightens up the hair.",
-        image: ("../assets/Hair Color/Honey Blonde.webp"),
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145572/Honey_Blonde_qu1kvq.webp",
       },
       {
-        id: 6,
+        id: 606,
         name: "Ombre",
         category: "Highlight",
         price: 499,
         description: " A gradual transition from dark roots to lighter ends.",
-        image: "/images/haircolor/ombre.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145570/Ombre_cixwxn.webp",
       },
       {
-        id: 7,
+        id: 607,
         name: "Caramel",
         category: "Highlight",
         price: 499,
         description: "Warm brown with golden undertones.",
-        image: "/images/haircolor/caramel-highlight.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145573/Caramel_Highlight_z2ngui.webp",
       },
       {
-        id: 8,
+        id: 608,
         name: "Chunky",
         category: "Highlight",
         price: 499,
         description: "Thick and distinct strands of color.",
-        image: "/images/haircolor/chunky.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145568/Chunky_swcybk.webp",
       },
             
-    // BALAYAGE CATEGORY
+    // Balayage (700 series)
 {
-  id: 1,
+  id: 701,
   name: "Ash Blonde",
   category: "Balayage",
   price: 1499,
   description:
     "A cool, muted blonde shade for a sophisticated and modern vibe.",
-  image: "/images/haircolor/ash-blonde.webp",
+  image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145553/Ash_Blonde_c3wl7f.webp",
 },
 {
-  id: 2,
+  id: 702,
   name: "Burgundy",
   category: "Balayage",
   price: 1499,
   description: "A deep red wine shade for a rich, elegant finish.",
-  image: "/images/haircolor/burgundy-hair.webp",
+  image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145552/Burgundy_Hair_daz7pu.webp",
 },
 {
-  id: 3,
+  id: 703,
   name: "Auburn",
   category: "Balayage",
   price: 1499,
   description:
     "It provides a warm, vibrant hue that makes your hair stand out, especially when it catches the light.",
-  image: "/images/haircolor/auburn.webp",
+  image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145549/Auburn_imx5ju.webp",
 },
 {
-  id: 4,
+  id: 704,
   name: "Bronde",
   category: "Balayage",
   price: 1499,
   description:
     "This is the perfect blend of blonde and brown tones, creating a sun-kissed and natural look. ",
-  image: "/images/haircolor/bronde.webp",
+  image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145554/Bronde_tblhvl.webp",
 },
 {
-  id: 5,
+  id: 705,
   name: "Chocolate Brown",
   category: "Balayage",
   price: 1499,
-  description:
-    "It gives your hair a deep and sophisticated look with beautiful, natural-looking dimension.",
-  image: "/images/haircolor/chocolate-brown.webp",
+  description:  "It gives your hair a deep and sophisticated look with beautiful, natural-looking dimension.",
+  image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145551/Chocolate_Brown_vr5pkw.webp",
 },
 {
-  id: 6,
+  id: 706,
   name: "Silver",
   category: "Balayage",
   price: 1499,
-  description:
-    "For a bold, modern, and edgy look, This is a great choice if you want to make a statement with your hair",
-  image: "/images/haircolor/silver.webp",
+  description: "For a bold, modern, and edgy look, This is a great choice if you want to make a statement with your hair",
+  image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145548/Silver_l58fjz.webp",
 },
 {
-  id: 7,
+  id: 707,
   name: "Caramel",
   category: "Balayage",
   price: 1499,
-  description:
-    "This hair color uses rich, warm golden brown and buttery tones that look like a delicious drizzle of caramel. ",
-  image: "/images/haircolor/caramel.webp",
+  description: "This hair color uses rich, warm golden brown and buttery tones that look like a delicious drizzle of caramel. ",
+  image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145550/Caramel_aignsx.webp",
       },
   
     ],
   },
 
-  // HAIR TREATMENT SERVICES
+  // HAIR TREATMENT SERVICES (800 series)
 {
   id: 3,
   name: "Hair Treatment",
   styles: [
     {
-      id: 1,
+      id: 801,
       name: "Bleaching",
       price: 200,
       description: "Lightens hair to prepare for vibrant or pastel colors.",
-      image: "/images/hairtreatment/bleaching.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145463/Bleaching_nghkji.webp",
     },
     {
-      id: 2,
+      id: 802,
       name: "Brazillian",
       price: 700,
       description: "A smoothing treatment that tames frizz and adds shine.",
-      image: "/images/hairtreatment/brazillian.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145464/Brazillian_xdxnsx.webp",
     },
     {
-      id: 3,
+      id: 803,
       name: "Cellophane",
       price: 500,
       description:
-        "A semi-permanent gloss that boosts shine and color vibrancy.",
-      image: "/images/hairtreatment/cellophane.webp",
+      "A semi-permanent gloss that boosts shine and color vibrancy.",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145461/Cellophane_wgpz13.webp",
     },
     {
-      id: 4,
+      id: 804,
       name: "Conditioning",
       price: 150,
       description: "Deep conditioning to restore softness and hydration.",
-      image: "/images/hairtreatment/conditioning.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145462/Conditioning_paf32i.webp",
     },
     {
-      id: 5,
+      id:805,
       name: "Cystiene",
       price: 1500,
       description:
         "A formaldehyde-free straightening treatment for smooth, silky hair.",
-      image: "/images/hairtreatment/cystiene.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145464/Cystiene_ypqumi.webp",
     },
     {
-      id: 6,
+      id: 806,
       name: "Hair Botox",
       price: 1000,
       description:
         "Restores damaged hair fibers for a healthier, youthful look.",
-      image: "/images/hairtreatment/hair-botox.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145462/Hair_Botox_yh1zqf.webp",
     },
     {
-      id: 7,
+      id: 807,
       name: "Hair Spa",
       price: 300,
       description:
         "A relaxing treatment that nourishes and revitalizes hair.",
-      image: "/images/hairtreatment/hair-spa.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145466/Hair_Spa_ksbm7w.webp",
     },
     {
-      id: 8,
+      id: 808,
       name: "Keratin",
       price: 500,
       description:
         "Infuses hair with keratin for smoothness and frizz control.",
-      image: "/images/hairtreatment/keratin.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145465/Keratin_gg7ryw.webp",
     },
   ],
 },
 
-// REBOND AND FORMS SERVICES
+// REBOND AND FORMS SERVICES (900 series)
 {
   id: 4,
   name: "Rebond & Forms",
   styles: [
     {
-      id: 1,
+      id: 901,
       name: "Rebond with Botox",
       price: 2000,
       description:
         "Straightens hair while restoring strength and smoothness with botox treatment.",
-      image: "/images/rebond/rebond-with-botox.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145429/Rebond_with_Botox_e6gotz.webp",
     },
     {
-      id: 2,
+      id: 902,
       name: "Rebond with Brazillian",
       price: 1500,
       description:
         "Combines rebonding with Brazilian treatment for sleek, frizz-free hair.",
-      image: "/images/rebond/rebond-with-brazillian.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145429/Rebond_with_Brazillian_v0gm0j.webp",
     },
     {
-      id: 3,
+      id: 903,
       name: "Rebond with Cellophane",
       price: 1300,
       description:
         "Smooth, straight hair with an added glossy cellophane finish.",
-      image: "/images/rebond/rebond-with-cellophane.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145428/Rebond_with_Cellophane_rthhmu.webp",
     },
     {
-      id: 4,
+      id: 904,
       name: "Rebond with Color",
       price: 2500,
       description:
         "Straightens and colors your hair for a vibrant, polished look.",
-      image: "/images/rebond/rebond-with-color.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145429/Rebond_with_Color_bc3laj.webp",
     },
     {
-      id: 5,
+      id: 905,
       name: "Rebond with Keratin",
       price: 1000,
       description:
         "Straightens hair while infusing keratin for lasting smoothness.",
-      image: "/images/rebond/rebond-with-keratin.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145428/Rebond_with_Keratin_sb1qv1.webp",
     },
   ],
 },
 
-// NAIL CARE SERVICES
+// NAIL CARE SERVICES (1000 series)
 {
   id: 5,
   name: "Nail Care",
   styles: [
     {
-      id: 1,
+      id: 1001,
       name: "Gel Polish",
       price: 500,
       description: "Long-lasting, glossy nail color that resists chipping.",
-      image: "/images/nails/gel-polish.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145412/Gel_Polish_xzvreu.webp",
     },
     {
-      id: 2,
+      id: 1002,
       name: "Removing Gel",
       price: 150,
       description:
         "Gentle and safe removal of gel polish without damaging nails.",
-      image: "/images/nails/removing-gel.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145412/Removing_Gel_ki333p.webp",
     },
     {
-      id: 3,
+      id: 1003,
       name: "Soft Gel",
       price: 800,
       description:
         "Flexible and lightweight nail extensions for a natural feel",
-      image: "/images/nails/soft-gel.webp",
+      image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145412/Soft_Gel_kkcqyu.webp",
     },
   ],
 },
 
-// FOOT SPA SERVICES
+// FOOT SPA SERVICES (1100 series)
   {
     id: 6,
     name: "Foot Spa",
     description: "Relaxing foot spa and care services",
     styles: [
       {
-        id: 1,
+        id: 1101,
         name: "Foot Spa Package",
         price: 300,
         description: "A complete foot spa with manicure and pedicure for full relaxation.",
         images: [
-          "/images/footspa/foot-spa.webp",
-          "/images/footspa/manicure.webp",
-          "/images/footspa/pedicure.webp",
+          "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145444/Foot_Spa_lxbf90.webp",
+          "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145443/Manicure_yauxtn.webp",
+          "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145443/Pedicure_ynltfu.webp",
         ],
       },
       {
-        id: 2,
+        id: 1102,
         name: "Manicure",
         price: 100,
         description: "Professional nail cleaning and shaping for a neat look.",
-        image: "/images/footspa/manicure.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145443/Manicure_yauxtn.webp",
       },
       {
-        id: 3,
+        id: 1103,
         name: "Pedicure",
         price: 100,
         description: "Thorough foot cleaning and nail care for healthy feet.",
-        image: "/images/footspa/pedicure.webp",
+        image: "https://res.cloudinary.com/dyw0qxjzn/image/upload/v1756145443/Pedicure_ynltfu.webp",
       },
     ],
   },
