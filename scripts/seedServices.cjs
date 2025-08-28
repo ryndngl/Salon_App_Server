@@ -7,7 +7,7 @@ const servicesData = [
   {
   id: 1,
   name: "Hair Cut",
-  description: "Professional hair cutting services for all ages",
+  description: "Stylish cuts tailored to your look.",
   styles: [
     // Men (100 series)
     {
@@ -332,7 +332,7 @@ const servicesData = [
   {
     id: 2,
     name: "Hair Color",
-    description: "Professional hair coloring services",
+    description: "Transform your hair with vibrant, lasting colors.",
     styles: [
       // Root Touch Up (400 series)
       {
@@ -578,6 +578,7 @@ const servicesData = [
 {
   id: 3,
   name: "Hair Treatment",
+  description: "Revitalize and strengthen your hair for a healthy, shiny look.",
   styles: [
     {
       id: 801,
@@ -647,6 +648,7 @@ const servicesData = [
 {
   id: 4,
   name: "Rebond & Forms",
+  description: "Get sleek, straight, and perfectly styled hair.",
   styles: [
     {
       id: 901,
@@ -695,6 +697,7 @@ const servicesData = [
 {
   id: 5,
   name: "Nail Care",
+description: "Keep your nails healthy, polished, and beautifully designed.",
   styles: [
     {
       id: 1001,
@@ -726,7 +729,7 @@ const servicesData = [
   {
     id: 6,
     name: "Foot Spa",
-    description: "Relaxing foot spa and care services",
+    description: "Relax and rejuvenate your feet with soothing care.",
     styles: [
       {
         id: 1101,
