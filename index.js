@@ -11,7 +11,7 @@ import authRoute from "./src/routes/auth.js";
 import userRoute from "./src/routes/users.js";
 import servicesRoute from "./src/routes/services.js";
 import searchRoutes from "./src/routes/search.js";
-import redirectRoutes from "./src/routes/redirect.js";
+// REMOVED: import redirectRoutes from "./src/routes/redirect.js";
 
 // Models
 import PasswordReset from "./src/models/PasswordReset.js";
@@ -42,7 +42,13 @@ app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/services", servicesRoute);
 app.use("/api/search", searchRoutes);
-app.use("/", redirectRoutes);
+// REMOVED: app.use("/", redirectRoutes);
+
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.json({ message: "Salon Booking API Server is running!" });
+});
+
 // 🔥 Cleanup expired reset tokens every 30 mins (extra safety, aside from TTL index)
 setInterval(async () => {
   try {
