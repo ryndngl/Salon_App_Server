@@ -42,7 +42,6 @@ app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/services", servicesRoute);
 app.use("/api/search", searchRoutes);
-// REMOVED: app.use("/", redirectRoutes);
 
 // Health check endpoint
 app.get("/", (req, res) => {
