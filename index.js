@@ -1,3 +1,4 @@
+// index.js - UPDATED SERVER (REMOVED AUTO-CLEANUP)
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -11,11 +12,7 @@ import authRoute from "./src/routes/auth.js";
 import userRoute from "./src/routes/users.js";
 import servicesRoute from "./src/routes/services.js";
 import searchRoutes from "./src/routes/search.js";
-import favoritesRoute from "./src/routes/favorites.js"; // ADD: favorites route
-// REMOVED: import redirectRoutes from "./src/routes/redirect.js";
-
-// Models
-import PasswordReset from "./src/models/PasswordReset.js";
+import favoritesRoute from "./src/routes/favorites.js";
 
 // Get __dirname for ES6 modules
 const __filename = fileURLToPath(import.meta.url);
@@ -59,19 +56,8 @@ app.get("/", (req, res) => {
   });
 });
 
-//  Cleanup expired reset tokens every 15 mins (extra safety, aside from TTL index)
-setInterval(async () => {
-  try {
-    const result = await PasswordReset.deleteMany({
-      expiresAt: { $lt: new Date() },
-    });
-    if (result.deletedCount > 0) {
-      console.log(`🧹 Cleaned up ${result.deletedCount} expired reset tokens`);
-    }
-  } catch (err) {
-    console.error("Error cleaning expired reset tokens:", err);
-  }
-}, 1000 * 30 * 15); // every 30 minutes
+// REMOVED: Auto cleanup interval - tokens are now persistent
+// Password reset tokens will only be cleaned up when you manually decide to clean them
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
@@ -80,5 +66,5 @@ app.listen(PORT, () => {
   console.log(`   - Users: http://localhost:${PORT}/api/users`);
   console.log(`   - Services: http://localhost:${PORT}/api/services`);
   console.log(`   - Search: http://localhost:${PORT}/api/search`);
-  console.log(`   - Favorites: http://localhost:${PORT}/api/favorites`); 
+  console.log(`   - Favorites: http://localhost:${PORT}/api/favorites`);
 });

@@ -91,7 +91,4 @@ const logout = (req, res) => {
   return res.status(200).json({ message: "Logged out successfully", isSuccess: true });
 };
 
-// REMOVED: Duplicate forgot/reset password functions
-// Use forgotPasswordController.js instead for better organization
-
 export { signUp, signIn, verifyToken, logout };

@@ -1,9 +1,8 @@
-// src/controllers/forgotPasswordController.js - FIXED VERSION
+// src/controllers/forgotPasswordController.js - SIMPLIFIED VERSION
 import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
 import PasswordReset from "../models/PasswordReset.js";
-import { resetRateLimit } from "../middlewares/rateLimiter.js";
 
 // Helper function to get real IP address
 const getRealIP = (req) => {
@@ -16,7 +15,7 @@ const getRealIP = (req) => {
          'unknown';
 };
 
-// FIXED: Forgot password - DO NOT reset rate limit here
+// UPDATED: Unlimited forgot password requests (no rate limiting)
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -56,7 +55,7 @@ export const forgotPassword = async (req, res) => {
 
     console.log('✅ User found:', user.email);
 
-    // Clean up old tokens and create new one
+    // Create reset token (no expiration, unlimited attempts)
     const { resetToken } = await PasswordReset.createResetToken(
       email.toLowerCase(), 
       ipAddress, 
@@ -72,7 +71,7 @@ export const forgotPassword = async (req, res) => {
       },
     });
 
-    // Enhanced email template
+    // SIMPLIFIED email template - just greeting + verification code
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -102,7 +101,7 @@ export const forgotPassword = async (req, res) => {
               </p>
               
               <p style="color: #495057; font-size: 16px; margin: 0 0 25px 0;">
-                We received a request to reset your password for your Salon Booking App account. Please use the verification code below to proceed with resetting your password.
+                We received a request to reset your password. Please use the verification code below:
               </p>
               
               <!-- Token Container -->
@@ -121,63 +120,13 @@ export const forgotPassword = async (req, res) => {
                     ${resetToken}
                   </code>
                 </div>
-                
-                <p style="color: #6c757d; font-size: 12px; margin: 15px 0 0 0;">
-                  Copy and paste this code in the password reset form
-                </p>
-              </div>
-              
-              <!-- Instructions -->
-              <div style="background: #f8f9fa; border-left: 4px solid #2c3e50; padding: 20px; margin: 30px 0;">
-                <h4 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">How to reset your password:</h4>
-                <ol style="color: #495057; font-size: 14px; margin: 0; padding-left: 20px;">
-                  <li style="margin-bottom: 8px;">Open the Salon Booking App</li>
-                  <li style="margin-bottom: 8px;">Navigate to the "Reset Password" page</li>
-                  <li style="margin-bottom: 8px;">Enter your email address: <strong>${email}</strong></li>
-                  <li style="margin-bottom: 8px;">Copy and paste the verification code above</li>
-                  <li>Create your new password</li>
-                </ol>
-              </div>
-              
-              <!-- Important Notice -->
-              <div style="border: 1px solid #dc3545; background: #f8d7da; padding: 20px; margin: 30px 0; border-radius: 6px;">
-                <h4 style="color: #721c24; margin: 0 0 12px 0; font-size: 15px; font-weight: 600;">Important Security Information</h4>
-                <ul style="color: #721c24; font-size: 14px; margin: 0; padding-left: 20px;">
-                  <li style="margin-bottom: 6px;">This code expires in 15 minutes from the time it was sent</li>
-                  <li style="margin-bottom: 6px;">The code can only be used once</li>
-                  <li style="margin-bottom: 6px;">Never share this code with anyone</li>
-                  <li>If you didn't request this reset, please ignore this email</li>
-                </ul>
-              </div>
-              
-              <!-- Timestamp Info -->
-              <div style="text-align: center; margin: 30px 0; padding: 20px; background: #e9ecef; border-radius: 6px;">
-                <p style="margin: 0; font-size: 14px; color: #6c757d;">
-                  <strong>Code generated:</strong> ${new Date().toLocaleString()}<br>
-                  <strong>Expires:</strong> ${new Date(Date.now() + 900000).toLocaleString()}
-                </p>
               </div>
               
               <p style="color: #495057; font-size: 16px; margin: 30px 0 0 0;">
-                If you have any questions or need assistance, please contact our support team.
-              </p>
-              
-              <p style="color: #495057; font-size: 16px; margin: 15px 0 0 0;">
                 Best regards,<br>
                 <strong>Salon Booking App Team</strong>
               </p>
               
-            </div>
-            
-            <!-- Footer -->
-            <div style="background: #6c757d; padding: 20px; text-align: center; color: #ffffff;">
-              <p style="margin: 0; font-size: 14px; line-height: 1.5;">
-                This email was sent to: ${email}<br>
-                Salon Booking App - Secure Password Reset Service
-              </p>
-              <div style="margin-top: 15px; font-size: 12px; opacity: 0.8; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
-                Request ID: ${Date.now()} | IP: ${ipAddress.substring(0, 8)}***
-              </div>
             </div>
             
           </div>
@@ -188,27 +137,17 @@ export const forgotPassword = async (req, res) => {
 
     console.log('📤 Sending reset email...');
     await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully with 15-min token!');
+    console.log('✅ Email sent successfully!');
 
-    // Log the attempt - DO NOT RESET RATE LIMIT HERE
     console.log(`📊 Reset request logged:`, {
       email: email.toLowerCase(),
       ip: ipAddress,
-      timestamp: new Date().toISOString(),
-      attempts: req.rateLimitInfo?.emailAttempts || 'N/A',
-      remaining: req.rateLimitInfo?.attemptsRemaining || 'N/A'
+      timestamp: new Date().toISOString()
     });
-
-    // Show accurate attempts remaining
-    const attemptsUsed = req.rateLimitInfo?.emailAttempts || 1;
-    const attemptsRemaining = Math.max(0, 3 - attemptsUsed);
 
     res.json({
       success: true,
-      message: "Reset token sent! Check your email and use it within 15 minutes.",
-      expiresIn: "15 minutes",
-      attemptsUsed: attemptsUsed,
-      attemptsRemaining: attemptsRemaining
+      message: "Reset token sent! Check your email.",
     });
 
   } catch (error) {
@@ -222,7 +161,7 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// FIXED: Reset password - ONLY reset rate limit here after successful password change
+// UPDATED: Reset password (no rate limiting reset needed)
 export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -282,21 +221,6 @@ export const resetPassword = async (req, res) => {
     // Mark token as used
     await resetRecord.markAsUsed();
 
-    // FIXED: Only NOW reset rate limit after successful password reset
-    try {
-      await resetRateLimit(resetRecord.email.toLowerCase(), 'email');
-      console.log('✅ Rate limit reset after successful password reset for:', resetRecord.email);
-    } catch (rateLimitError) {
-      console.log('⚠️ Could not reset rate limit:', rateLimitError.message);
-    }
-
-    // Auto-cleanup expired tokens
-    try {
-      await PasswordReset.autoCleanup();
-    } catch (cleanupError) {
-      console.log('⚠️ Auto cleanup warning:', cleanupError.message);
-    }
-
     console.log('🎉 Password reset successful for:', user.email);
 
     res.json({
@@ -315,35 +239,15 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// Enhanced cleanup with better error handling
-export const cleanupExpiredTokens = async (req, res) => {
-  try {
-    const deletedCount = await PasswordReset.autoCleanup();
-    
-    res.json({
-      success: true,
-      message: `Cleanup completed. Removed ${deletedCount} expired tokens.`,
-      deletedCount
-    });
-  } catch (error) {
-    console.error("❌ Cleanup error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Cleanup failed",
-      error: error.message
-    });
-  }
-};
-
-// Manual cleanup endpoint for admin
+// Manual cleanup endpoint for admin use
 export const manualCleanup = async (req, res) => {
   try {
-    const { olderThan = 7, includeUsed = true, includeExpired = true } = req.body;
+    const { olderThan = 7, includeUsed = true } = req.body;
     
     const deletedCount = await PasswordReset.manualCleanup({
       olderThan,
       includeUsed,
-      includeExpired
+      includeExpired: true
     });
     
     res.json({

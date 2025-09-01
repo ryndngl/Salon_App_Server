@@ -1,22 +1,17 @@
-// src/routes/auth.js
+// src/routes/auth.js - SIMPLIFIED (NO RATE LIMITING)
 import express from "express";
 const router = express.Router();
 
-// controllers - ONLY use one implementation
+// controllers
 import { signUp, signIn, verifyToken, logout } from "../controllers/authController.js";
 
 // Use the dedicated controller for password reset
 import { 
   forgotPassword, 
   resetPassword, 
-  cleanupExpiredTokens 
+  manualCleanup,
+  getResetStats
 } from "../controllers/forgotPasswordController.js";
-
-// Import rate limiting middleware
-import { 
-  passwordResetRateLimit, 
-  getRateLimitStatus 
-} from "../middlewares/rateLimiter.js";
 
 // =========================
 //  Auth Routes
@@ -27,56 +22,61 @@ router.post("/verify-token", verifyToken);
 router.post("/logout", logout);
 
 // =========================
-//  Forgot/Reset Password Routes (with enhanced security)
+//  Forgot/Reset Password Routes (NO RATE LIMITING)
 // =========================
 
-// Forgot password WITH rate limiting (3 attempts per hour per email)
-router.post("/forgot-password", passwordResetRateLimit, forgotPassword);
+// Forgot password - unlimited requests
+router.post("/forgot-password", forgotPassword);
 
-// Reset password (no rate limiting needed - token validation handles security)
+// Reset password - unlimited attempts
 router.post("/reset-password", resetPassword);
 
 // =========================
-//  Debug/Admin Routes (REMOVE IN PRODUCTION)
+//  Admin Routes for managing password resets
 // =========================
 
-// Check rate limit status for debugging
-router.get("/rate-limit-status/:email", getRateLimitStatus);
+// Manual cleanup of old tokens (when you want to clean)
+router.post("/cleanup-tokens", manualCleanup);
 
-// Manual cleanup of expired tokens
-router.post("/cleanup-tokens", cleanupExpiredTokens);
+// Get password reset statistics
+router.get("/reset-stats", getResetStats);
 
-// DEBUG: Clear all rate limits for testing
-router.delete("/debug/clear-rate-limits", async (req, res) => {
+// Get all password reset records for admin view
+router.get("/reset-records", async (req, res) => {
   try {
-    const RateLimit = (await import('../models/RateLimit.js')).default;
-    const result = await RateLimit.deleteMany({});
+    const PasswordReset = (await import('../models/PasswordReset.js')).default;
+    const records = await PasswordReset.getAllResets();
     res.json({ 
       success: true, 
-      message: `Cleared ${result.deletedCount} rate limit records`,
-      cleared: result.deletedCount 
+      records: records.map(r => ({
+        id: r._id,
+        email: r.email,
+        status: r.status,
+        isUsed: r.isUsed,
+        createdAt: r.createdAt,
+        usedAt: r.usedAt,
+        ipAddress: r.ipAddress
+      }))
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// DEBUG: Check what's in rate limits collection
-router.get("/debug/rate-limits", async (req, res) => {
+// Manually delete specific password reset record
+router.delete("/reset-record/:id", async (req, res) => {
   try {
-    const RateLimit = (await import('../models/RateLimit.js')).default;
-    const records = await RateLimit.find({}).sort({ lastAttempt: -1 });
+    const PasswordReset = (await import('../models/PasswordReset.js')).default;
+    const result = await PasswordReset.findByIdAndDelete(req.params.id);
+    
+    if (!result) {
+      return res.status(404).json({ success: false, message: "Record not found" });
+    }
+    
     res.json({ 
       success: true, 
-      records: records.map(r => ({
-        identifier: r.identifier,
-        type: r.type,
-        attempts: r.attempts,
-        locked: r.isLocked(),
-        lastAttempt: r.lastAttempt,
-        windowStart: r.windowStart,
-        lockedUntil: r.lockedUntil
-      }))
+      message: "Password reset record deleted successfully",
+      deleted: result
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

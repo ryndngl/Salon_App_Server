@@ -1,4 +1,4 @@
-// src/models/PasswordReset.js - FIXED VERSION (NO DUPLICATES)
+// src/models/PasswordReset.js - SIMPLIFIED VERSION (NO EXPIRATION, PERSISTENT)
 import mongoose from "mongoose";
 import crypto from "crypto";
 
@@ -14,11 +14,6 @@ const passwordResetSchema = new mongoose.Schema(
       type: String,
       required: true,
       index: true,
-    },
-    expiresAt: {
-      type: Date,
-      required: true,
-      default: () => new Date(Date.now() + 900000), // 15 minutes
     },
     isUsed: {
       type: Boolean,
@@ -39,7 +34,7 @@ const passwordResetSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['active', 'used', 'expired'],
+      enum: ['active', 'used'],
       default: 'active',
       index: true,
     },
@@ -53,20 +48,11 @@ const passwordResetSchema = new mongoose.Schema(
   }
 );
 
-// Compound indexes for better performance
+// Indexes for better performance
 passwordResetSchema.index({ tokenHash: 1, status: 1 });
-
-// FIXED: Single unique index to prevent duplicates per email (removed duplicate)
-passwordResetSchema.index({ email: 1, status: 1 }, { 
-  unique: true, 
-  partialFilterExpression: { status: 'active' } 
-});
+passwordResetSchema.index({ email: 1, status: 1 });
 
 // Instance methods
-passwordResetSchema.methods.isExpired = function() {
-  return new Date() > this.expiresAt;
-};
-
 passwordResetSchema.methods.markAsUsed = function() {
   this.isUsed = true;
   this.usedAt = new Date();
@@ -74,12 +60,7 @@ passwordResetSchema.methods.markAsUsed = function() {
   return this.save();
 };
 
-passwordResetSchema.methods.markAsExpired = function() {
-  this.status = 'expired';
-  return this.save();
-};
-
-// FIXED: Static method - prevents duplicates
+// UPDATED: Create reset token - updates existing record instead of creating new one
 passwordResetSchema.statics.createResetToken = async function(email, ipAddress, userAgent = null) {
   const normalizedEmail = email.toLowerCase();
   
@@ -92,47 +73,39 @@ passwordResetSchema.statics.createResetToken = async function(email, ipAddress, 
     .update(resetToken)
     .digest("hex");
 
-  // FIXED: Delete/Update existing active tokens for this email first
-  await this.updateMany(
-    { 
-      email: normalizedEmail, 
+  // Check if there's already an existing record for this email
+  let resetRecord = await this.findOne({ email: normalizedEmail });
+
+  if (resetRecord) {
+    // UPDATE existing record instead of creating new one
+    resetRecord.tokenHash = tokenHash;
+    resetRecord.status = 'active';
+    resetRecord.isUsed = false;
+    resetRecord.usedAt = null;
+    resetRecord.ipAddress = ipAddress;
+    resetRecord.userAgent = userAgent;
+    resetRecord.resetAttempts = 0;
+    
+    await resetRecord.save();
+    console.log(`🔄 Updated existing reset token for ${email} (ID: ${resetRecord._id})`);
+    console.log(`🆔 New tokenHash ending: ${tokenHash.slice(-3)}`);
+  } else {
+    // CREATE new record only if no existing record
+    resetRecord = await this.create({
+      email: normalizedEmail,
+      tokenHash,
+      ipAddress,
+      userAgent,
       status: 'active'
-    },
-    { 
-      $set: { 
-        status: 'expired',
-        isUsed: false
-      }
-    }
-  );
-
-  // FIXED: Always clean up old expired/used tokens for this email to prevent accumulation
-  await this.deleteMany({
-    email: normalizedEmail,
-    $or: [
-      { status: 'expired' },
-      { status: 'used' },
-      { expiresAt: { $lt: new Date() } }
-    ]
-  });
-
-  // Create new reset token record - ONLY ONE ACTIVE PER EMAIL
-  const resetRecord = await this.create({
-    email: normalizedEmail,
-    tokenHash,
-    ipAddress,
-    userAgent,
-    expiresAt: new Date(Date.now() + 900000), // 15 minutes
-    status: 'active'
-  });
-
-  console.log(`🔑 New reset token created for ${email} (ID: ${resetRecord._id})`);
-  console.log(`🧹 Cleaned up old tokens for ${email}`);
+    });
+    console.log(`🔑 New reset token created for ${email} (ID: ${resetRecord._id})`);
+    console.log(`🆔 TokenHash ending: ${tokenHash.slice(-3)}`);
+  }
 
   return { resetToken, resetRecord };
 };
 
-// FIXED: Validate token method
+// UPDATED: Validate token method - no expiration check
 passwordResetSchema.statics.validateToken = async function(token) {
   if (!token) {
     throw new Error("Token is required");
@@ -144,7 +117,7 @@ passwordResetSchema.statics.validateToken = async function(token) {
     .update(token)
     .digest("hex");
 
-  // Find the token record
+  // Find the token record - only check if active and not used
   const resetRecord = await this.findOne({
     tokenHash,
     isUsed: false,
@@ -160,46 +133,15 @@ passwordResetSchema.statics.validateToken = async function(token) {
     throw new Error("Invalid or expired reset token");
   }
 
-  // Check if expired
-  if (resetRecord.isExpired()) {
-    // Mark as expired
-    await resetRecord.markAsExpired();
-    throw new Error("Reset token has expired");
-  }
-
   console.log(`✅ Valid reset token for ${resetRecord.email}`);
   return resetRecord;
 };
 
-// FIXED: Auto-cleanup expired tokens periodically
-passwordResetSchema.statics.autoCleanup = async function() {
-  try {
-    // Delete expired tokens
-    const expiredResult = await this.deleteMany({
-      $or: [
-        { expiresAt: { $lt: new Date() } },
-        { status: 'expired' },
-        { status: 'used', usedAt: { $lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } // Used tokens older than 1 day
-      ]
-    });
-
-    if (expiredResult.deletedCount > 0) {
-      console.log(`🧹 Auto cleanup: Removed ${expiredResult.deletedCount} expired/used tokens`);
-    }
-
-    return expiredResult.deletedCount;
-  } catch (error) {
-    console.error('❌ Auto cleanup error:', error);
-    return 0;
-  }
-};
-
-// Manual cleanup function - when you choose to run it
+// Manual cleanup function - for admin use when you want to clean
 passwordResetSchema.statics.manualCleanup = async function(options = {}) {
   const {
     olderThan = 7, // days
-    includeUsed = true,
-    includeExpired = true
+    includeUsed = true
   } = options;
 
   const cutoffDate = new Date(Date.now() - (olderThan * 24 * 60 * 60 * 1000));
@@ -208,15 +150,8 @@ passwordResetSchema.statics.manualCleanup = async function(options = {}) {
     createdAt: { $lt: cutoffDate }
   };
 
-  if (includeUsed && includeExpired) {
-    query.$or = [
-      { status: 'used' },
-      { status: 'expired' }
-    ];
-  } else if (includeUsed) {
+  if (includeUsed) {
     query.status = 'used';
-  } else if (includeExpired) {
-    query.status = 'expired';
   }
 
   const result = await this.deleteMany(query);
@@ -228,7 +163,7 @@ passwordResetSchema.statics.manualCleanup = async function(options = {}) {
   return result.deletedCount;
 };
 
-// Get statistics - FIXED to show unique users
+// Get statistics - shows all password reset attempts
 passwordResetSchema.statics.getStats = async function() {
   const stats = await this.aggregate([
     {
@@ -239,9 +174,10 @@ passwordResetSchema.statics.getStats = async function() {
     }
   ]);
 
-  // FIXED: Count unique emails instead of total requests per email
+  // Count unique emails that have reset passwords
   const uniqueUsers = await this.distinct('email');
   
+  // Recent requests (last 24 hours)
   const recentRequests = await this.aggregate([
     { $match: { createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } },
     {
@@ -262,6 +198,14 @@ passwordResetSchema.statics.getStats = async function() {
     recentRequests: recentRequests,
     total: await this.countDocuments()
   };
+};
+
+// Get all password reset records for admin view
+passwordResetSchema.statics.getAllResets = async function() {
+  return await this.find({})
+    .sort({ createdAt: -1 })
+    .select('email status isUsed createdAt usedAt ipAddress')
+    .limit(100); // Limit to prevent overload
 };
 
 const PasswordReset = mongoose.model("PasswordReset", passwordResetSchema);
