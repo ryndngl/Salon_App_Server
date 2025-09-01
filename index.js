@@ -11,6 +11,7 @@ import authRoute from "./src/routes/auth.js";
 import userRoute from "./src/routes/users.js";
 import servicesRoute from "./src/routes/services.js";
 import searchRoutes from "./src/routes/search.js";
+import favoritesRoute from "./src/routes/favorites.js"; // ADD: favorites route
 // REMOVED: import redirectRoutes from "./src/routes/redirect.js";
 
 // Models
@@ -42,13 +43,23 @@ app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/services", servicesRoute);
 app.use("/api/search", searchRoutes);
+app.use("/api/favorites", favoritesRoute); 
 
 // Health check endpoint
 app.get("/", (req, res) => {
-  res.json({ message: "Salon Booking API Server is running!" });
+  res.json({ 
+    message: "Salon Booking API Server is running!",
+    endpoints: {
+      auth: "/api/auth",
+      users: "/api/users", 
+      services: "/api/services",
+      search: "/api/search",
+      favorites: "/api/favorites" 
+    }
+  });
 });
 
-// 🔥 Cleanup expired reset tokens every 30 mins (extra safety, aside from TTL index)
+//  Cleanup expired reset tokens every 15 mins (extra safety, aside from TTL index)
 setInterval(async () => {
   try {
     const result = await PasswordReset.deleteMany({
@@ -60,8 +71,14 @@ setInterval(async () => {
   } catch (err) {
     console.error("Error cleaning expired reset tokens:", err);
   }
-}, 1000 * 60 * 30); // every 30 minutes
+}, 1000 * 30 * 15); // every 30 minutes
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 API Endpoints:`);
+  console.log(`   - Auth: http://localhost:${PORT}/api/auth`);
+  console.log(`   - Users: http://localhost:${PORT}/api/users`);
+  console.log(`   - Services: http://localhost:${PORT}/api/services`);
+  console.log(`   - Search: http://localhost:${PORT}/api/search`);
+  console.log(`   - Favorites: http://localhost:${PORT}/api/favorites`); 
 });
