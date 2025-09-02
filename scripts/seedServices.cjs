@@ -240,7 +240,7 @@ const servicesData = [
     // Kids (300 series)
     {
       id: 301,
-      name: "Army Cut",
+      name: "Litte Army Cut",
       category: "Kids",
       price: 100,
       description: "A neat, short haircut perfect for active kids.",
@@ -495,7 +495,7 @@ const servicesData = [
       },
       {
         id: 607,
-        name: "Caramel",
+        name: "Toasted Caramel",
         category: "Highlight",
         price: 499,
         description: "Warm brown with golden undertones.",
@@ -564,7 +564,7 @@ const servicesData = [
 },
 {
   id: 707,
-  name: "Caramel",
+  name: "Golden Caramel",
   category: "Balayage",
   price: 1499,
   description: "This hair color uses rich, warm golden brown and buttery tones that look like a delicious drizzle of caramel. ",
