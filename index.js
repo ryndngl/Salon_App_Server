@@ -1,4 +1,4 @@
-// index.js - UPDATED SERVER (REMOVED AUTO-CLEANUP)
+// index.js - UPDATED SERVER with Testimonial Routes
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -13,6 +13,7 @@ import userRoute from "./src/routes/users.js";
 import servicesRoute from "./src/routes/services.js";
 import searchRoutes from "./src/routes/search.js";
 import favoritesRoute from "./src/routes/favorites.js";
+import testimonial from "./src/routes/testimonial.js"; 
 
 // Get __dirname for ES6 modules
 const __filename = fileURLToPath(import.meta.url);
@@ -41,6 +42,7 @@ app.use("/api/users", userRoute);
 app.use("/api/services", servicesRoute);
 app.use("/api/search", searchRoutes);
 app.use("/api/favorites", favoritesRoute); 
+app.use("/api/testimonials", testimonial); 
 
 // Health check endpoint
 app.get("/", (req, res) => {
@@ -51,13 +53,11 @@ app.get("/", (req, res) => {
       users: "/api/users", 
       services: "/api/services",
       search: "/api/search",
-      favorites: "/api/favorites" 
+      favorites: "/api/favorites",
+      testimonials: "/api/testimonials" 
     }
   });
 });
-
-// REMOVED: Auto cleanup interval - tokens are now persistent
-// Password reset tokens will only be cleaned up when you manually decide to clean them
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
@@ -67,4 +67,5 @@ app.listen(PORT, () => {
   console.log(`   - Services: http://localhost:${PORT}/api/services`);
   console.log(`   - Search: http://localhost:${PORT}/api/search`);
   console.log(`   - Favorites: http://localhost:${PORT}/api/favorites`);
+  console.log(`   - Testimonials: http://localhost:${PORT}/api/testimonials`);
 });

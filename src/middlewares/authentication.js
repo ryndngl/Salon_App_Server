@@ -1,4 +1,4 @@
-// Updated authentication.js middleware - Support Bearer token
+// Updated authentication.js middleware - Fixed for your token structure
 import jwt from "jsonwebtoken";
 import "dotenv/config";
 const secret = process.env.secret_key;
@@ -25,6 +25,8 @@ const authentication = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, secret);
+    // Your signIn controller puts the full user object in the token
+    // So decoded already contains: { id, fullName, email, phone, photo }
     req.user = decoded;
     next();
     return;
