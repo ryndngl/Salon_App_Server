@@ -1,285 +1,272 @@
-// src/controllers/forgotPasswordController.js - SIMPLIFIED VERSION
-import nodemailer from "nodemailer";
-import bcrypt from "bcrypt";
+// src/controllers/forgotPasswordController.js - With email support + validateToken endpoint
 import User from "../models/User.js";
+import Admin from "../models/Admin.js";
 import PasswordReset from "../models/PasswordReset.js";
+import bcrypt from "bcrypt";
+import { sendMobileResetEmail, sendAdminResetEmail } from "../services/emailService.js";
 
-// Helper function to get real IP address
-const getRealIP = (req) => {
-  return req.headers['x-forwarded-for']?.split(',')[0] || 
-         req.headers['x-real-ip'] || 
-         req.connection.remoteAddress || 
-         req.socket.remoteAddress ||
-         (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
-         req.ip ||
-         'unknown';
-};
-
-// UPDATED: Unlimited forgot password requests (no rate limiting)
+// Mobile forgot password with email
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const ipAddress = getRealIP(req);
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
     const userAgent = req.headers['user-agent'] || null;
 
-    console.log('📧 Forgot password request:', { email, ip: ipAddress });
+    console.log(` Mobile password reset requested for: ${email}`);
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
-
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide a valid email address",
-      });
-    }
-
-    // Check if user exists (security: always respond same way)
+    // Check if user exists
     const user = await User.findOne({ email: email.toLowerCase() });
-
     if (!user) {
-      console.log('⚠️ Password reset attempt for non-existent user:', email);
-      
-      // Security: Don't reveal if email exists or not
+      // Don't reveal if email exists or not for security
       return res.status(200).json({
-        success: true,
-        message: "If your email is registered, you will receive a reset token shortly",
+        message: "If this email exists, a reset link has been sent",
+        isSuccess: true
       });
     }
 
-    console.log('✅ User found:', user.email);
-
-    // Create reset token (no expiration, unlimited attempts)
-    const { resetToken } = await PasswordReset.createResetToken(
-      email.toLowerCase(), 
-      ipAddress, 
+    // Create reset token
+    const { resetToken, resetRecord } = await PasswordReset.createResetToken(
+      email,
+      ipAddress,
       userAgent
     );
 
-    // Setup email transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    // SIMPLIFIED email template - just greeting + verification code
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Password Reset Request - Salon Booking App",
-      html: `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Password Reset Request</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; line-height: 1.6;">
-          <div style="max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
-            
-            <!-- Header -->
-            <div style="background: #2c3e50; padding: 30px; text-align: center; color: white;">
-              <h1 style="margin: 0; font-size: 24px; font-weight: 600;">Password Reset Request</h1>
-              <p style="margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Salon Booking App</p>
-            </div>
-            
-            <!-- Main Content -->
-            <div style="padding: 40px 30px;">
-              
-              <p style="color: #495057; font-size: 16px; margin: 0 0 25px 0;">
-                Hello,
-              </p>
-              
-              <p style="color: #495057; font-size: 16px; margin: 0 0 25px 0;">
-                We received a request to reset your password. Please use the verification code below:
-              </p>
-              
-              <!-- Token Container -->
-              <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
-                <h3 style="color: #495057; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px;">Verification Code</h3>
-                
-                <div style="background: white; border-radius: 6px; padding: 20px; margin: 15px 0; border: 1px solid #dee2e6;">
-                  <code style="font-family: 'Courier New', monospace; 
-                               font-size: 18px; 
-                               color: #2c3e50; 
-                               font-weight: 700; 
-                               word-break: break-all; 
-                               display: block; 
-                               line-height: 1.4;
-                               letter-spacing: 2px;">
-                    ${resetToken}
-                  </code>
-                </div>
-              </div>
-              
-              <p style="color: #495057; font-size: 16px; margin: 30px 0 0 0;">
-                Best regards,<br>
-                <strong>Salon Booking App Team</strong>
-              </p>
-              
-            </div>
-            
-          </div>
-        </body>
-        </html>
-      `,
-    };
-
-    console.log('📤 Sending reset email...');
-    await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully!');
-
-    console.log(`📊 Reset request logged:`, {
-      email: email.toLowerCase(),
-      ip: ipAddress,
-      timestamp: new Date().toISOString()
-    });
-
-    res.json({
-      success: true,
-      message: "Reset token sent! Check your email.",
-    });
-
-  } catch (error) {
-    console.error("❌ Forgot password error:", error);
+    // Send email with reset link
+    const emailResult = await sendMobileResetEmail(email, resetToken);
     
+    if (emailResult.success) {
+      console.log(` Mobile reset email sent successfully to: ${email}`);
+      res.status(200).json({
+        message: "Reset instructions sent to your email",
+        isSuccess: true,
+        // Remove this in production - only for testing
+        resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+      });
+    } else {
+      console.error(` Failed to send email to: ${email}`);
+      res.status(500).json({
+        message: "Failed to send reset email. Please try again later.",
+        isSuccess: false
+      });
+    }
+  } catch (error) {
+    console.error("Mobile forgot password error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error. Please try again later.",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Internal server error",
+      isSuccess: false
     });
   }
 };
 
-// UPDATED: Reset password (no rate limiting reset needed)
+// Admin forgot password with email
+export const adminForgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || null;
+
+    console.log(` Admin password reset requested for: ${email}`);
+
+    // Check if admin exists
+    const admin = await Admin.findOne({ email: email.toLowerCase() });
+    if (!admin) {
+      // Don't reveal if email exists or not for security
+      return res.status(200).json({
+        message: "If this admin email exists, a reset code has been sent",
+        isSuccess: true
+      });
+    }
+
+    // Create 6-digit reset code
+    const { resetCode, resetRecord } = await PasswordReset.createAdminResetCode(
+      email,
+      ipAddress,
+      userAgent
+    );
+
+    // Send email with 6-digit code
+    const emailResult = await sendAdminResetEmail(email, resetCode);
+    
+    if (emailResult.success) {
+      console.log(` Admin reset email sent successfully to: ${email}`);
+      res.status(200).json({
+        message: "Admin reset code sent to your email",
+        isSuccess: true,
+        expiresIn: "15 minutes",
+        // Return code only in development
+        resetCode: process.env.NODE_ENV === 'development' ? resetCode : undefined
+      });
+    } else {
+      console.error(`❌ Failed to send admin email to: ${email}`);
+      res.status(500).json({
+        message: "Failed to send reset email. Please try again later.",
+        isSuccess: false
+      });
+    }
+  } catch (error) {
+    console.error("Admin forgot password error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      isSuccess: false
+    });
+  }
+};
+
+// Clean validateToken function - replace sa forgotPasswordController.js mo
+export const validateToken = async (req, res) => {
+  try {
+    const { token, type = 'mobile' } = req.body;
+
+    console.log(` Token validation requested - Type: ${type}`);
+
+    if (!token) {
+      return res.status(400).json({
+        message: "Token is required",
+        isSuccess: false
+      });
+    }
+
+    // Use the same validation logic as resetPassword
+    const resetRecord = await PasswordReset.validateToken(token, type);
+    
+    // If we reach here, token is valid
+    console.log(` Token validation successful for: ${resetRecord.email}`);
+    
+    res.status(200).json({
+      message: "Token is valid",
+      isSuccess: true,
+      success: true,
+      email: resetRecord.email
+    });
+    
+  } catch (error) {
+    // CLEAN ERROR LOGGING - No stack trace for expected errors
+    if (error.message.includes("Invalid") || error.message.includes("expired")) {
+      console.log(` Token validation failed: ${error.message}`);
+      return res.status(400).json({
+        message: error.message,
+        isSuccess: false
+      });
+    }
+    
+    // Only log full error for unexpected issues
+    console.error("Unexpected token validation error:", error.message);
+    res.status(500).json({
+      message: "Internal server error",
+      isSuccess: false
+    });
+  }
+};
+
+// Enhanced reset password (supports both mobile and admin)
 export const resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
-    const ipAddress = getRealIP(req);
+    const { token, newPassword, type = 'mobile' } = req.body;
 
-    console.log('🔄 Password reset attempt from IP:', ipAddress);
+    console.log(` Password reset attempt - Type: ${type}`);
 
-    // Input validation
     if (!token || !newPassword) {
       return res.status(400).json({
-        success: false,
         message: "Token and new password are required",
+        isSuccess: false
       });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters long",
-      });
-    }
-
-    // Validate token using model method
-    let resetRecord;
-    try {
-      resetRecord = await PasswordReset.validateToken(token);
-    } catch (validationError) {
-      console.log('❌ Token validation failed:', validationError.message);
-      return res.status(400).json({
-        success: false,
-        message: validationError.message,
-        type: "INVALID_TOKEN"
-      });
-    }
-
-    console.log('✅ Valid token found for:', resetRecord.email);
-
-    // Find the user
-    const user = await User.findOne({ email: resetRecord.email });
-    if (!user) {
-      console.log('❌ User not found for email:', resetRecord.email);
-      return res.status(404).json({
-        success: false,
-        message: "User account not found",
-      });
-    }
-
-    // Hash the new password
-    const saltRounds = 13;
+    // Validate token/code
+    const resetRecord = await PasswordReset.validateToken(token, type);
+    
+    // Hash new password
+    const saltRounds = type === 'admin' ? 12 : 10; // Higher security for admin
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-    // Update user password
-    await User.findByIdAndUpdate(user._id, {
-      password: hashedPassword,
-    });
+    // Update password based on type
+    if (type === 'admin') {
+      const admin = await Admin.findOne({ email: resetRecord.email });
+      if (!admin) {
+        return res.status(404).json({
+          message: "Admin not found",
+          isSuccess: false
+        });
+      }
+      
+      admin.password = hashedPassword;
+      await admin.save();
+      console.log(` Admin password updated for: ${resetRecord.email}`);
+    } else {
+      const user = await User.findOne({ email: resetRecord.email });
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found",
+          isSuccess: false
+        });
+      }
+      
+      user.password = hashedPassword;
+      await user.save();
+      console.log(` User password updated for: ${resetRecord.email}`);
+    }
 
     // Mark token as used
     await resetRecord.markAsUsed();
 
-    console.log('🎉 Password reset successful for:', user.email);
-
-    res.json({
-      success: true,
-      message: "Password reset successfully! You can now login with your new password.",
-      timestamp: new Date().toISOString()
+    res.status(200).json({
+      message: "Password reset successfully",
+      isSuccess: true,
+      success: true  // Add both for compatibility
     });
-
   } catch (error) {
-    console.error("❌ Reset password error:", error);
+    // CLEAN ERROR LOGGING - No stack trace
+    if (error.message.includes("Invalid") || error.message.includes("expired")) {
+      console.log(` Password reset failed: ${error.message}`);
+      return res.status(400).json({
+        message: error.message,
+        isSuccess: false
+      });
+    }
+    
+    // Only log full error for unexpected issues
+    console.error("Unexpected reset password error:", error.message);
     res.status(500).json({
-      success: false,
-      message: "Server error during password reset. Please try again.",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Internal server error",
+      isSuccess: false
     });
   }
 };
 
-// Manual cleanup endpoint for admin use
+// Cleanup expired tokens
 export const manualCleanup = async (req, res) => {
   try {
-    const { olderThan = 7, includeUsed = true } = req.body;
+    const expiredCount = await PasswordReset.cleanupExpired();
     
-    const deletedCount = await PasswordReset.manualCleanup({
-      olderThan,
-      includeUsed,
-      includeExpired: true
-    });
-    
-    res.json({
-      success: true,
-      message: `Manual cleanup completed. Removed ${deletedCount} records.`,
-      deletedCount
+    res.status(200).json({
+      message: `Cleanup completed. ${expiredCount} tokens marked as expired`,
+      isSuccess: true,
+      expiredCount
     });
   } catch (error) {
-    console.error("❌ Manual cleanup error:", error);
+    console.error("Cleanup error:", error);
     res.status(500).json({
-      success: false,
-      message: "Manual cleanup failed",
-      error: error.message
+      message: "Internal server error",
+      isSuccess: false
     });
   }
 };
 
-// Get password reset statistics
+// Get reset statistics
 export const getResetStats = async (req, res) => {
   try {
     const stats = await PasswordReset.getStats();
     
-    res.json({
-      success: true,
+    res.status(200).json({
+      isSuccess: true,
       stats
     });
   } catch (error) {
-    console.error("❌ Stats error:", error);
+    console.error("Get stats error:", error);
     res.status(500).json({
-      success: false,
-      message: "Failed to get stats",
-      error: error.message
+      message: "Internal server error",
+      isSuccess: false
     });
   }
 };
