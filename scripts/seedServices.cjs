@@ -280,7 +280,7 @@ const servicesData = [
     },
     {
       id: 306,
-      name: "Fade",
+      name: "High Fade",
       category: "Kids",
       price: 100,
       description: "Short sides fading into longer top hair for a fresh look.",
