@@ -1,4 +1,4 @@
-// index.js - Complete version with testimonials and all routes
+// index.js - Complete version with services integration
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -297,6 +297,219 @@ app.post("/api/auth/sign-in", async (req, res) => {
 });
 
 // =========================
+//  SERVICES ROUTES
+// =========================
+
+// GET all services with full data and images
+app.get("/api/services", async (req, res) => {
+  try {
+    const { default: Service } = await import("./src/models/Service.js");
+    
+    const services = await Service.find({ isActive: true })
+      .select('id name description styles isActive createdAt updatedAt')
+      .lean();
+    
+    // Add style count and process images for each service
+    const servicesWithDetails = await Promise.all(
+      services.map(async (service) => {
+        const fullService = await Service.findById(service._id);
+        const activeStyles = fullService.styles.filter(style => style.isActive !== false);
+        
+        // Process styles to include full image URLs
+        const stylesWithImages = activeStyles.map(style => ({
+          ...style.toObject(),
+          imageUrl: style.image ? `http://localhost:${PORT}${style.image}` : null,
+          thumbnailUrl: style.thumbnail ? `http://localhost:${PORT}${style.thumbnail}` : null
+        }));
+        
+        return {
+          ...service,
+          styles: stylesWithImages,
+          totalStyles: activeStyles.length,
+          hasStyles: activeStyles.length > 0,
+          // Add service image if available
+          imageUrl: service.image ? `http://localhost:${PORT}${service.image}` : null
+        };
+      })
+    );
+
+    console.log(`Fetched ${servicesWithDetails.length} services with ${servicesWithDetails.reduce((total, service) => total + service.totalStyles, 0)} total styles`);
+
+    res.json({
+      message: "Services fetched successfully",
+      isSuccess: true,
+      success: true,
+      services: servicesWithDetails,
+      data: servicesWithDetails,
+      count: servicesWithDetails.length
+    });
+  } catch (error) {
+    console.error("Services fetch error:", error);
+    res.status(500).json({
+      message: "Error fetching services",
+      isSuccess: false,
+      error: error.message
+    });
+  }
+});
+
+// GET service by ID with full data
+app.get("/api/services/id/:id", async (req, res) => {
+  try {
+    const { default: Service } = await import("./src/models/Service.js");
+    
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ 
+        success: false,
+        isSuccess: false,
+        message: 'Service not found' 
+      });
+    }
+    
+    // Filter active styles and add image URLs
+    const activeStyles = service.styles.filter(style => style.isActive !== false);
+    const stylesWithImages = activeStyles.map(style => ({
+      ...style.toObject(),
+      imageUrl: style.image ? `http://localhost:${PORT}${style.image}` : null,
+      thumbnailUrl: style.thumbnail ? `http://localhost:${PORT}${style.thumbnail}` : null
+    }));
+    
+    res.json({
+      success: true,
+      isSuccess: true,
+      message: "Service fetched successfully",
+      data: {
+        ...service.toObject(),
+        styles: stylesWithImages,
+        totalStyles: activeStyles.length,
+        imageUrl: service.image ? `http://localhost:${PORT}${service.image}` : null
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching service by ID:', error);
+    res.status(500).json({ 
+      success: false,
+      isSuccess: false,
+      message: 'Failed to fetch service', 
+      error: error.message 
+    });
+  }
+});
+
+// GET service by name
+app.get("/api/services/name/:serviceName", async (req, res) => {
+  try {
+    const { default: Service } = await import("./src/models/Service.js");
+    
+    const serviceName = decodeURIComponent(req.params.serviceName);
+    const service = await Service.findOne({ 
+      name: { $regex: new RegExp(`^${serviceName}$`, 'i') },
+      isActive: true
+    });
+    
+    if (!service) {
+      return res.status(404).json({ 
+        success: false,
+        isSuccess: false,
+        message: `Service '${serviceName}' not found` 
+      });
+    }
+    
+    // Filter active styles and add image URLs
+    const activeStyles = service.styles.filter(style => style.isActive !== false);
+    const stylesWithImages = activeStyles.map(style => ({
+      ...style.toObject(),
+      imageUrl: style.image ? `http://localhost:${PORT}${style.image}` : null,
+      thumbnailUrl: style.thumbnail ? `http://localhost:${PORT}${style.thumbnail}` : null
+    }));
+    
+    res.json({
+      success: true,
+      isSuccess: true,
+      message: "Service fetched successfully",
+      data: {
+        ...service.toObject(),
+        styles: stylesWithImages,
+        totalStyles: activeStyles.length,
+        imageUrl: service.image ? `http://localhost:${PORT}${service.image}` : null
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching service by name:', error);
+    res.status(500).json({ 
+      success: false,
+      isSuccess: false,
+      message: 'Failed to fetch service', 
+      error: error.message 
+    });
+  }
+});
+
+   // Search styles across all services
+app.get("/api/services/search/styles", async (req, res) => {
+  try {
+    const { default: Service } = await import("./src/models/Service.js");
+    const { query, limit = 50 } = req.query;
+    
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({ 
+        success: false,
+        isSuccess: false,
+        message: 'Search query must be at least 2 characters long' 
+      });
+    }
+
+    const services = await Service.find({ isActive: true });
+    
+    const results = [];
+    
+    for (const service of services) {
+      const matchingStyles = service.styles
+        .filter(style => 
+          style.isActive !== false &&
+          style.name && 
+          style.name.toLowerCase().includes(query.toLowerCase())
+        )
+        .map(style => ({
+          ...style.toObject(),
+          serviceName: service.name,
+          serviceId: service._id,
+          // Add image URLs
+          imageUrl: style.image ? `http://localhost:${PORT}${style.image}` : null,
+          thumbnailUrl: style.thumbnail ? `http://localhost:${PORT}${style.thumbnail}` : null
+        }));
+      
+      results.push(...matchingStyles);
+    }
+
+    const limitedResults = results.slice(0, parseInt(limit));
+
+    console.log(`Search query: "${query}" found ${results.length} results`);
+
+    res.json({
+      success: true,
+      isSuccess: true,
+      message: "Search completed successfully",
+      data: {
+        query: query.trim(),
+        results: limitedResults,
+        totalFound: results.length,
+        showing: limitedResults.length
+      }
+    });
+  } catch (error) {
+    console.error('Error searching styles:', error);
+    res.status(500).json({ 
+      success: false,
+      isSuccess: false,
+      message: 'Search failed', 
+      error: error.message 
+    });
+  }
+});
+
+// =========================
 //  TESTIMONIALS ROUTES
 // =========================
 
@@ -588,24 +801,27 @@ app.post("/api/auth/logout", async (req, res) => {
   }
 });
 
-// Basic services endpoint
-app.get("/api/services", async (req, res) => {
+// Users endpoint with dynamic import - FIXED
+app.get("/api/users", async (req, res) => {
   try {
+    // FIXED: Use default import like other routes
+    const { default: User } = await import("./src/models/User.js");
+    const users = await User.find({}, '-password').sort({ createdAt: -1 });
     res.json({
-      message: "Services endpoint working",
+      message: "Users fetched successfully",
       isSuccess: true,
-      services: []
+      users
     });
   } catch (error) {
+    console.error("Users fetch error:", error);
     res.status(500).json({
-      message: "Error fetching services",
+      message: "Error fetching users",
       isSuccess: false
     });
   }
 });
 
-// Users endpoint with dynamic import - FIXED
-// Add this sa index.js mo, after yung existing /api/users route
+// Individual user endpoint
 app.get("/api/users/:id", async (req, res) => {
   try {
     const { default: User } = await import("./src/models/User.js");
@@ -644,7 +860,7 @@ app.get("/", (req, res) => {
     message: "Van's Glow Up Salon Server is running!",
     endpoints: {
       setup: ["/api/setup/admin", "/api/setup/reset-admin", "/api/debug/admins"],
-      mobile: ["/api/auth/sign-up", "/api/auth/sign-in", "/api/testimonials"],
+      mobile: ["/api/auth/sign-up", "/api/auth/sign-in", "/api/testimonials", "/api/services"],
       desktop: ["/api/auth/login", "/api/auth/admin/sign-in", "/api/users"],
       common: ["/api/health", "/api/auth/verify-token", "/api/auth/logout"]
     },
@@ -658,7 +874,7 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`🔧 Setup: POST /api/setup/reset-admin (create/reset admin)`);
-  console.log(`📱 Mobile: sign-up, sign-in, testimonials available`);
+  console.log(`📱 Mobile: sign-up, sign-in, testimonials, services available`);
   console.log(`💻 Desktop: /api/auth/login (legacy) + admin/sign-in available`);
   console.log(`\n📝 To reset admin: POST http://localhost:${PORT}/api/setup/reset-admin`);
   console.log(`🔑 Admin credentials: username=admin, password=admin123`);
