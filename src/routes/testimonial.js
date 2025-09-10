@@ -77,20 +77,21 @@ router.post("/", authentication, async (req, res) => {
     }
 
     // Check if user already has a testimonial (optional - remove if you want multiple testimonials per user)
-    const existingTestimonial = await Testimonial.findOne({ userId: req.user.id });
+   /* const existingTestimonial = await Testimonial.findOne({ userId: req.user.id });
     if (existingTestimonial) {
       return res.status(400).json({
         success: false,
         message: "You have already submitted a testimonial. You can edit your existing one instead."
       });
-    }
+    }*/
 
     const testimonial = new Testimonial({
       name: name.trim(),
       feedback: feedback.trim(),
       rating: rating || 5,
       userId: req.user.id,
-      userEmail: req.user.email
+      userEmail: req.user.email,
+      isAuthenticated: true
     });
 
     const savedTestimonial = await testimonial.save();
