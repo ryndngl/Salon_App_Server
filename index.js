@@ -40,7 +40,7 @@ const secret = process.env.secret_key;
 
 // USE AUTH ROUTES
 app.use("/api/auth", authRoutes);
-// app.use("/api/testimonials", testimonialRoutes); // Commented out to use direct route
+// app.use("/api/testimonials", testimonialRoutes); 
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -52,7 +52,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // =========================
-//  SETUP ROUTES (One-time use)
+//  SETUP ROUTES 
 // =========================
 
 // Setup default admin (call this once to create admin user)
@@ -80,8 +80,6 @@ app.post("/api/setup/admin", async (req, res) => {
     });
 
     await defaultAdmin.save();
-
-    console.log("Default admin created successfully!");
 
     res.status(201).json({
       message: "Default admin created successfully",
@@ -132,8 +130,6 @@ app.post("/api/setup/reset-admin", async (req, res) => {
     }
 
     await admin.save();
-
-    console.log("Admin password reset/created successfully!");
 
     res.status(200).json({
       message: "Admin password reset successfully",
@@ -219,8 +215,6 @@ app.get("/api/services", async (req, res) => {
         };
       })
     );
-
-    console.log(`Fetched ${servicesWithDetails.length} services with ${servicesWithDetails.reduce((total, service) => total + service.totalStyles, 0)} total styles`);
 
     res.json({
       message: "Services fetched successfully",
@@ -362,7 +356,6 @@ app.get("/api/services/search/styles", async (req, res) => {
           ...style.toObject(),
           serviceName: service.name,
           serviceId: service._id,
-          // Add image URLs
           imageUrl: style.image ? `http://localhost:${PORT}${style.image}` : null,
           thumbnailUrl: style.thumbnail ? `http://localhost:${PORT}${style.thumbnail}` : null
         }));
@@ -406,11 +399,9 @@ app.get("/api/testimonials", async (req, res) => {
     const { default: Testimonial } = await import("./src/models/Testimonial.js");
     
     const testimonials = await Testimonial.find({ isApproved: true })
-      .select("name feedback rating createdAt")
+      .select("name feedback rating userId createdAt")  // Added userId here
       .sort({ createdAt: -1 })
       .limit(50);
-
-    console.log(`Fetched ${testimonials.length} testimonials`);
 
     res.status(200).json({
       success: true,
@@ -433,19 +424,13 @@ app.get("/api/testimonials", async (req, res) => {
 
 // POST create new testimonial (with auto-detect authentication)
 app.post("/api/testimonials", async (req, res) => {
-  console.log('=== CREATE TESTIMONIAL REQUEST ===');
-  console.log('Request Body:', req.body);
-  console.log('Content-Type:', req.headers['content-type']);
-  
+
   try {
     const { default: Testimonial } = await import("./src/models/Testimonial.js");
     const { name, feedback, rating, userId, userEmail } = req.body;
 
-    console.log('Extracted fields:', { name, feedback, rating, userId, userEmail });
-
     // Validation
     if (!name || !feedback) {
-      console.log('❌ Missing required fields: name or feedback');
       return res.status(400).json({
         success: false,
         isSuccess: false,
@@ -463,7 +448,6 @@ app.post("/api/testimonials", async (req, res) => {
     }
 
     if (feedback.length > 200) {
-      console.log('❌ Feedback too long:', feedback.length);
       return res.status(400).json({
         success: false,
         isSuccess: false,
@@ -472,27 +456,24 @@ app.post("/api/testimonials", async (req, res) => {
     }
 
     // Create testimonial object with automatic authentication detection
-const testimonialData = {
-  name: name.trim(),
-  feedback: feedback.trim(),
-  rating: rating || 5,
-  isApproved: true
-};
+    const testimonialData = {
+      name: name.trim(),
+      feedback: feedback.trim(),
+      rating: rating || 5,
+      isApproved: true
+    };
 
-// Add userId and userEmail if they exist, then set isAuthenticated
-if (userId && userEmail) {
-  testimonialData.userId = userId;
-  testimonialData.userEmail = userEmail;
-  testimonialData.isAuthenticated = true;
-} else {
-  testimonialData.isAuthenticated = false;
-}
-    console.log('Creating testimonial with data:', testimonialData);
-
+    // Add userId and userEmail if they exist, then set isAuthenticated
+    if (userId && userEmail) {
+      testimonialData.userId = userId;
+      testimonialData.userEmail = userEmail;
+      testimonialData.isAuthenticated = true;
+    } else {
+      testimonialData.isAuthenticated = false;
+    }
+    
     const testimonial = new Testimonial(testimonialData);
     const savedTestimonial = await testimonial.save();
-
-    console.log("✅ Testimonial created successfully:", savedTestimonial._id);
 
     res.status(201).json({
       success: true,
@@ -500,18 +481,16 @@ if (userId && userEmail) {
       message: "Testimonial created successfully",
       data: {
         id: savedTestimonial._id,
+        _id: savedTestimonial._id,  
         name: savedTestimonial.name,
         feedback: savedTestimonial.feedback,
         rating: savedTestimonial.rating,
+        userId: savedTestimonial.userId,  
         isAuthenticated: savedTestimonial.isAuthenticated,
         createdAt: savedTestimonial.createdAt
       }
     });
   } catch (error) {
-    console.error("❌ Error creating testimonial:", error);
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    
     // If it's a validation error, send specific message
     if (error.name === 'ValidationError') {
       const validationErrors = Object.keys(error.errors).map(field => 
@@ -532,6 +511,87 @@ if (userId && userEmail) {
       isSuccess: false,
       message: "Failed to create testimonial",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// PUT update testimonial
+app.put("/api/testimonials/:id", async (req, res) => {
+  try {
+    const { default: Testimonial } = await import("./src/models/Testimonial.js");
+    const { id } = req.params;
+    const { name, feedback, rating } = req.body;
+
+    // Validation
+    if (!name || !feedback) {
+      return res.status(400).json({
+        success: false,
+        message: "Name and feedback are required"
+      });
+    }
+
+    const testimonial = await Testimonial.findById(id);
+    if (!testimonial) {
+      return res.status(404).json({
+        success: false,
+        message: "Testimonial not found"
+      });
+    }
+
+    // Update fields
+    testimonial.name = name.trim();
+    testimonial.feedback = feedback.trim();
+    testimonial.rating = rating || 5;
+
+    const updated = await testimonial.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Testimonial updated successfully",
+      data: {
+        _id: updated._id,
+        name: updated.name,
+        feedback: updated.feedback,
+        rating: updated.rating,
+        userId: updated.userId,
+        createdAt: updated.createdAt
+      }
+    });
+  } catch (error) {
+    console.error("Error updating testimonial:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update testimonial",
+      error: error.message
+    });
+  }
+});
+
+// DELETE testimonial
+app.delete("/api/testimonials/:id", async (req, res) => {
+  try {
+    const { default: Testimonial } = await import("./src/models/Testimonial.js");
+    const { id } = req.params;
+
+    const result = await Testimonial.findByIdAndDelete(id);
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: "Testimonial not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Testimonial deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting testimonial:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete testimonial",
+      error: error.message
     });
   }
 });
@@ -584,7 +644,6 @@ app.get("/api/users/:id", async (req, res) => {
       isSuccess: true
     });
   } catch (error) {
-    console.error("Individual user fetch error:", error);
     res.status(500).json({
       message: "Error fetching user",
       isSuccess: false
