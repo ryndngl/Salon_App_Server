@@ -1,4 +1,4 @@
-// index.js - Complete version with services integration
+// index.js - Fixed version with proper auth routes import
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -21,6 +21,10 @@ const PORT = process.env.PORT || 5000;
 // database connection
 import connect from "./src/config/connection.js";
 
+// IMPORT AUTH ROUTES
+import authRoutes from "./src/routes/auth.js";
+import testimonialRoutes from "./src/routes/testimonial.js";
+
 // middlewares
 app.use(express.json());
 app.use(cookieParser());
@@ -33,6 +37,10 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 await connect();
 
 const secret = process.env.secret_key;
+
+// USE AUTH ROUTES
+app.use("/api/auth", authRoutes);
+// app.use("/api/testimonials", testimonialRoutes); // Commented out to use direct route
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -170,127 +178,6 @@ app.get("/api/debug/admins", async (req, res) => {
     console.error("Debug admins error:", error);
     res.status(500).json({
       message: "Error fetching admins",
-      isSuccess: false
-    });
-  }
-});
-
-// =========================
-//  MOBILE APP ROUTES
-// =========================
-
-// Mobile user signup - with dynamic model import
-app.post("/api/auth/sign-up", async (req, res) => {
-  try {
-    const { default: User } = await import("./src/models/User.js");
-    const { fullName, email, password } = req.body;
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({
-        message: "User already exists",
-        isSuccess: false
-      });
-    }
-
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create new user
-    const newUser = new User({
-      fullName,
-      email,
-      password: hashedPassword
-    });
-
-    const savedUser = await newUser.save();
-
-    res.status(201).json({
-      message: "User created successfully",
-      isSuccess: true,
-      user: {
-        id: savedUser._id,
-        fullName: savedUser.fullName,
-        email: savedUser.email
-      }
-    });
-  } catch (error) {
-    console.error("Signup error:", error);
-    res.status(500).json({
-      message: "Internal server error",
-      isSuccess: false
-    });
-  }
-});
-
-// Mobile user signin - FIXED with correct import
-app.post("/api/auth/sign-in", async (req, res) => {
-  try {
-    // FIXED: Use default import like in sign-up route
-    const { default: User } = await import("./src/models/User.js");
-    const { email, password } = req.body;
-
-    console.log("Sign-in attempt for email:", email); // Debug log
-
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user) {
-      console.log("User not found for email:", email); // Debug log
-      return res.status(401).json({
-        message: "Invalid email or password",
-        isSuccess: false
-      });
-    }
-
-    // Compare password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      console.log("Invalid password for email:", email); // Debug log
-      return res.status(401).json({
-        message: "Invalid email or password",
-        isSuccess: false
-      });
-    }
-
-    // Create JWT token
-    const token = jwt.sign(
-      {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        type: 'user'
-      },
-      secret,
-      { expiresIn: "30d" }
-    );
-
-    // Set cookie
-    res.cookie("salon_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    });
-
-    console.log("User sign-in successful for email:", email); // Debug log
-
-    res.status(200).json({
-      message: "Login successful",
-      isSuccess: true,
-      token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        type: 'user'
-      }
-    });
-  } catch (error) {
-    console.error("Signin error:", error);
-    res.status(500).json({
-      message: "Internal server error",
       isSuccess: false
     });
   }
@@ -446,7 +333,7 @@ app.get("/api/services/name/:serviceName", async (req, res) => {
   }
 });
 
-   // Search styles across all services
+// Search styles across all services
 app.get("/api/services/search/styles", async (req, res) => {
   try {
     const { default: Service } = await import("./src/models/Service.js");
@@ -523,14 +410,14 @@ app.get("/api/testimonials", async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(50);
 
-    console.log(`Fetched ${testimonials.length} testimonials`); // Debug log
+    console.log(`Fetched ${testimonials.length} testimonials`);
 
     res.status(200).json({
       success: true,
-      isSuccess: true, // For compatibility with mobile app
+      isSuccess: true,
       message: "Testimonials fetched successfully",
       data: testimonials,
-      testimonials: testimonials, // Alternative format
+      testimonials: testimonials,
       count: testimonials.length
     });
   } catch (error) {
@@ -544,14 +431,21 @@ app.get("/api/testimonials", async (req, res) => {
   }
 });
 
-// POST create new testimonial (for mobile app)
+// POST create new testimonial (with auto-detect authentication)
 app.post("/api/testimonials", async (req, res) => {
+  console.log('=== CREATE TESTIMONIAL REQUEST ===');
+  console.log('Request Body:', req.body);
+  console.log('Content-Type:', req.headers['content-type']);
+  
   try {
     const { default: Testimonial } = await import("./src/models/Testimonial.js");
     const { name, feedback, rating, userId, userEmail } = req.body;
 
+    console.log('Extracted fields:', { name, feedback, rating, userId, userEmail });
+
     // Validation
     if (!name || !feedback) {
+      console.log('❌ Missing required fields: name or feedback');
       return res.status(400).json({
         success: false,
         isSuccess: false,
@@ -560,6 +454,7 @@ app.post("/api/testimonials", async (req, res) => {
     }
 
     if (name.length > 50) {
+      console.log('❌ Name too long:', name.length);
       return res.status(400).json({
         success: false,
         isSuccess: false,
@@ -568,6 +463,7 @@ app.post("/api/testimonials", async (req, res) => {
     }
 
     if (feedback.length > 200) {
+      console.log('❌ Feedback too long:', feedback.length);
       return res.status(400).json({
         success: false,
         isSuccess: false,
@@ -575,236 +471,78 @@ app.post("/api/testimonials", async (req, res) => {
       });
     }
 
-    const testimonial = new Testimonial({
-      name: name.trim(),
-      feedback: feedback.trim(),
-      rating: rating || 5,
-      userId: userId,
-      userEmail: userEmail,
-      isApproved: true // Auto-approve for now
-    });
+    // Create testimonial object with automatic authentication detection
+const testimonialData = {
+  name: name.trim(),
+  feedback: feedback.trim(),
+  rating: rating || 5,
+  isApproved: true
+};
 
+// Add userId and userEmail if they exist, then set isAuthenticated
+if (userId && userEmail) {
+  testimonialData.userId = userId;
+  testimonialData.userEmail = userEmail;
+  testimonialData.isAuthenticated = true;
+} else {
+  testimonialData.isAuthenticated = false;
+}
+    console.log('Creating testimonial with data:', testimonialData);
+
+    const testimonial = new Testimonial(testimonialData);
     const savedTestimonial = await testimonial.save();
 
-    console.log("New testimonial created:", savedTestimonial.name); // Debug log
+    console.log("✅ Testimonial created successfully:", savedTestimonial._id);
 
     res.status(201).json({
       success: true,
       isSuccess: true,
       message: "Testimonial created successfully",
-      data: savedTestimonial
+      data: {
+        id: savedTestimonial._id,
+        name: savedTestimonial.name,
+        feedback: savedTestimonial.feedback,
+        rating: savedTestimonial.rating,
+        isAuthenticated: savedTestimonial.isAuthenticated,
+        createdAt: savedTestimonial.createdAt
+      }
     });
   } catch (error) {
-    console.error("Error creating testimonial:", error);
+    console.error("❌ Error creating testimonial:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    
+    // If it's a validation error, send specific message
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.keys(error.errors).map(field => 
+        `${field}: ${error.errors[field].message}`
+      ).join(', ');
+      
+      return res.status(400).json({
+        success: false,
+        isSuccess: false,
+        message: "Validation failed",
+        errors: validationErrors,
+        details: error.errors
+      });
+    }
+    
     res.status(500).json({
       success: false,
       isSuccess: false,
       message: "Failed to create testimonial",
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
 // =========================
-//  DESKTOP APP ROUTES
+//  USERS ROUTES
 // =========================
 
-// Legacy desktop login route (for backward compatibility with desktop app)
-app.post("/api/auth/login", async (req, res) => {
-  try {
-    console.log("🔄 Legacy login route called (desktop app compatibility)");
-    
-    const { default: Admin } = await import("./src/models/Admin.js");
-    const { username, password } = req.body;
-    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
-
-    console.log(`Admin login attempt: ${username} from ${ipAddress}`);
-
-    // Find admin by username
-    const admin = await Admin.findOne({ username: username, isActive: true });
-    if (!admin) {
-      console.log(`Admin not found: ${username}`);
-      return res.status(401).json({
-        message: "Invalid credentials",
-        isSuccess: false,
-        success: false
-      });
-    }
-
-    // Use the Admin model's comparePassword method
-    const isPasswordValid = await admin.comparePassword(password);
-    if (!isPasswordValid) {
-      console.log(`Invalid password for admin: ${username}`);
-      return res.status(401).json({
-        message: "Invalid credentials",
-        isSuccess: false,
-        success: false
-      });
-    }
-
-    // Use the Admin model's updateLastLogin method
-    await admin.updateLastLogin(ipAddress, req.headers['user-agent'] || 'unknown');
-
-    // Create JWT token
-    const token = jwt.sign(
-      {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        role: admin.role,
-        type: 'admin'
-      },
-      secret,
-      { expiresIn: "8h" }
-    );
-
-    console.log(`Admin login successful: ${username}`);
-
-    res.status(200).json({
-      message: "Admin login successful",
-      isSuccess: true,
-      success: true,
-      token,
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        role: admin.role,
-        lastLogin: admin.lastLogin,
-        type: 'admin'
-      }
-    });
-  } catch (error) {
-    console.error("Legacy admin signin error:", error);
-    res.status(500).json({
-      message: "Internal server error",
-      isSuccess: false,
-      success: false
-    });
-  }
-});
-
-// Desktop admin signin - FIXED to use Admin model's comparePassword method
-app.post("/api/auth/admin/sign-in", async (req, res) => {
-  try {
-    const { default: Admin } = await import("./src/models/Admin.js");
-    const { username, password } = req.body;
-    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
-
-    console.log(`Admin login attempt: ${username} from ${ipAddress}`);
-
-    // Find admin by username
-    const admin = await Admin.findOne({ username: username, isActive: true });
-    if (!admin) {
-      console.log(`Admin not found: ${username}`);
-      return res.status(401).json({
-        message: "Invalid credentials",
-        isSuccess: false
-      });
-    }
-
-    // Use the Admin model's comparePassword method instead of bcrypt.compare
-    const isPasswordValid = await admin.comparePassword(password);
-    if (!isPasswordValid) {
-      console.log(`Invalid password for admin: ${username}`);
-      return res.status(401).json({
-        message: "Invalid credentials",
-        isSuccess: false
-      });
-    }
-
-    // Use the Admin model's updateLastLogin method
-    await admin.updateLastLogin(ipAddress, req.headers['user-agent'] || 'unknown');
-
-    // Create JWT token
-    const token = jwt.sign(
-      {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        role: admin.role,
-        type: 'admin'
-      },
-      secret,
-      { expiresIn: "8h" }
-    );
-
-    console.log(`Admin login successful: ${username}`);
-
-    res.status(200).json({
-      message: "Admin login successful",
-      isSuccess: true,
-      token,
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        email: admin.email,
-        role: admin.role,
-        lastLogin: admin.lastLogin,
-        type: 'admin'
-      }
-    });
-  } catch (error) {
-    console.error("Admin signin error:", error);
-    res.status(500).json({
-      message: "Internal server error",
-      isSuccess: false
-    });
-  }
-});
-
-// =========================
-//  COMMON ROUTES
-// =========================
-
-// Token verification
-app.post("/api/auth/verify-token", async (req, res) => {
-  try {
-    const token = req.body.token || req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-      return res.status(401).json({
-        message: "No token provided",
-        isSuccess: false
-      });
-    }
-
-    const decoded = jwt.verify(token, secret);
-    
-    res.status(200).json({
-      message: "Token is valid",
-      isSuccess: true,
-      user: decoded
-    });
-  } catch (error) {
-    return res.status(401).json({
-      message: "Invalid or expired token",
-      isSuccess: false
-    });
-  }
-});
-
-// Logout
-app.post("/api/auth/logout", async (req, res) => {
-  try {
-    res.clearCookie("salon_token");
-    res.status(200).json({
-      message: "Logout successful",
-      isSuccess: true
-    });
-  } catch (error) {
-    console.error("Logout error:", error);
-    res.status(500).json({
-      message: "Internal server error",
-      isSuccess: false
-    });
-  }
-});
-
-// Users endpoint with dynamic import - FIXED
+// Users endpoint with dynamic import
 app.get("/api/users", async (req, res) => {
   try {
-    // FIXED: Use default import like other routes
     const { default: User } = await import("./src/models/User.js");
     const users = await User.find({}, '-password').sort({ createdAt: -1 });
     res.json({
@@ -859,10 +597,11 @@ app.get("/", (req, res) => {
   res.json({ 
     message: "Van's Glow Up Salon Server is running!",
     endpoints: {
+      auth: ["/api/auth/sign-up", "/api/auth/sign-in", "/api/auth/forgot-password", "/api/auth/reset-password"],
+      services: ["/api/services", "/api/services/id/:id", "/api/services/name/:name"],
+      testimonials: ["/api/testimonials"],
       setup: ["/api/setup/admin", "/api/setup/reset-admin", "/api/debug/admins"],
-      mobile: ["/api/auth/sign-up", "/api/auth/sign-in", "/api/testimonials", "/api/services"],
-      desktop: ["/api/auth/login", "/api/auth/admin/sign-in", "/api/users"],
-      common: ["/api/health", "/api/auth/verify-token", "/api/auth/logout"]
+      users: ["/api/users", "/api/users/:id"]
     },
     instructions: {
       setup: "Call POST /api/setup/reset-admin to create/reset admin",
@@ -871,11 +610,15 @@ app.get("/", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// Listen on all network interfaces
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+  console.log(`Network access: http://192.168.100.67:${PORT}`);
   console.log(`🔧 Setup: POST /api/setup/reset-admin (create/reset admin)`);
-  console.log(`📱 Mobile: sign-up, sign-in, testimonials, services available`);
-  console.log(`💻 Desktop: /api/auth/login (legacy) + admin/sign-in available`);
+  console.log(`📱 Mobile: sign-up, sign-in, forgot-password, reset-password available`);
+  console.log(`💻 Services: GET /api/services available`);
+  console.log(`📝 Testimonials: GET/POST /api/testimonials available`);
   console.log(`\n📝 To reset admin: POST http://localhost:${PORT}/api/setup/reset-admin`);
   console.log(`🔑 Admin credentials: username=admin, password=admin123`);
+  console.log(`\n🔄 Auth routes loaded from: ./src/routes/auth.js`);
 });
