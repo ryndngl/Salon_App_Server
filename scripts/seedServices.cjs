@@ -230,7 +230,7 @@ const servicesData = [
     },
     {
       id: 216,
-      name: "Balayage",
+      name: "Sombre",
       category: "Women",
       price: 100,
       description: "A highlighting technique for a natural sun-kissed effect.",
@@ -264,7 +264,7 @@ const servicesData = [
     },
     {
       id: 304,
-      name: "Comb Over Cut",
+      name: "Little Comb Over Cut",
       category: "Kids",
       price: 100,
       description: "Short sides with a neat combed top for a polished look.",
@@ -280,7 +280,7 @@ const servicesData = [
     },
     {
       id: 306,
-      name: "High Fade",
+      name: "Little High Fade",
       category: "Kids",
       price: 100,
       description: "Short sides fading into longer top hair for a fresh look.",
