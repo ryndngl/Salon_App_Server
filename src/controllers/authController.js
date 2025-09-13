@@ -6,7 +6,8 @@ import jwt from "jsonwebtoken";
 import "dotenv/config";
 
 const secret = process.env.secret_key;
-
+console.log("🔑 JWT Secret loaded:", secret ? "YES" : "NO");
+console.log("🔑 Secret value:", secret);
 // Existing mobile user signup
 export const signUp = async (req, res) => {
   try {
@@ -17,7 +18,7 @@ export const signUp = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         message: "User already exists",
-        isSuccess: false
+        isSuccess: false,
       });
     }
 
@@ -29,7 +30,7 @@ export const signUp = async (req, res) => {
     const newUser = new User({
       fullName,
       email,
-      password: hashedPassword
+      password: hashedPassword,
     });
 
     const savedUser = await newUser.save();
@@ -40,14 +41,14 @@ export const signUp = async (req, res) => {
       user: {
         id: savedUser._id,
         fullName: savedUser.fullName,
-        email: savedUser.email
-      }
+        email: savedUser.email,
+      },
     });
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({
       message: "Internal server error",
-      isSuccess: false
+      isSuccess: false,
     });
   }
 };
@@ -62,7 +63,7 @@ export const signIn = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         message: "Invalid email or password",
-        isSuccess: false
+        isSuccess: false,
       });
     }
 
@@ -71,7 +72,7 @@ export const signIn = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         message: "Invalid email or password",
-        isSuccess: false
+        isSuccess: false,
       });
     }
 
@@ -81,7 +82,7 @@ export const signIn = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        type: 'user'
+        type: "user",
       },
       secret,
       { expiresIn: "30d" }
@@ -92,7 +93,7 @@ export const signIn = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
     res.status(200).json({
@@ -103,14 +104,14 @@ export const signIn = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        type: 'user'
-      }
+        type: "user",
+      },
     });
   } catch (error) {
     console.error("Signin error:", error);
     res.status(500).json({
       message: "Internal server error",
-      isSuccess: false
+      isSuccess: false,
     });
   }
 };
@@ -119,8 +120,8 @@ export const signIn = async (req, res) => {
 export const adminSignIn = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
-    const userAgent = req.headers['user-agent'] || 'unknown';
+    const ipAddress = req.ip || req.connection.remoteAddress || "unknown";
+    const userAgent = req.headers["user-agent"] || "unknown";
 
     console.log(`🔐 Admin login attempt: ${username} from ${ipAddress}`);
 
@@ -130,7 +131,7 @@ export const adminSignIn = async (req, res) => {
       console.log(`❌ Admin not found: ${username}`);
       return res.status(401).json({
         message: "Invalid credentials",
-        isSuccess: false
+        isSuccess: false,
       });
     }
 
@@ -140,7 +141,7 @@ export const adminSignIn = async (req, res) => {
       console.log(`❌ Invalid password for admin: ${username}`);
       return res.status(401).json({
         message: "Invalid credentials",
-        isSuccess: false
+        isSuccess: false,
       });
     }
 
@@ -154,7 +155,7 @@ export const adminSignIn = async (req, res) => {
         username: admin.username,
         email: admin.email,
         role: admin.role,
-        type: 'admin'
+        type: "admin",
       },
       secret,
       { expiresIn: "8h" } // 8 hours for admin session
@@ -172,14 +173,14 @@ export const adminSignIn = async (req, res) => {
         email: admin.email,
         role: admin.role,
         lastLogin: admin.lastLogin,
-        type: 'admin'
-      }
+        type: "admin",
+      },
     });
   } catch (error) {
     console.error("Admin signin error:", error);
     res.status(500).json({
       message: "Internal server error",
-      isSuccess: false
+      isSuccess: false,
     });
   }
 };
@@ -187,24 +188,24 @@ export const adminSignIn = async (req, res) => {
 // Enhanced verify token (supports both user and admin)
 export const verifyToken = async (req, res) => {
   try {
-    const token = req.body.token || req.headers.authorization?.split(' ')[1];
-    
+    const token = req.body.token || req.headers.authorization?.split(" ")[1];
+
     if (!token) {
       return res.status(401).json({
         message: "No token provided",
-        isSuccess: false
+        isSuccess: false,
       });
     }
 
     const decoded = jwt.verify(token, secret);
-    
+
     // Check if user/admin still exists and is active
-    if (decoded.type === 'admin') {
+    if (decoded.type === "admin") {
       const admin = await Admin.findById(decoded.id);
       if (!admin || !admin.isActive) {
         return res.status(401).json({
           message: "Admin account not found or inactive",
-          isSuccess: false
+          isSuccess: false,
         });
       }
     } else {
@@ -212,7 +213,7 @@ export const verifyToken = async (req, res) => {
       if (!user) {
         return res.status(401).json({
           message: "User not found",
-          isSuccess: false
+          isSuccess: false,
         });
       }
     }
@@ -220,20 +221,23 @@ export const verifyToken = async (req, res) => {
     res.status(200).json({
       message: "Token is valid",
       isSuccess: true,
-      user: decoded
+      user: decoded,
     });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
       return res.status(401).json({
         message: "Invalid or expired token",
-        isSuccess: false
+        isSuccess: false,
       });
     }
-    
+
     console.error("Token verification error:", error);
     res.status(500).json({
       message: "Internal server error",
-      isSuccess: false
+      isSuccess: false,
     });
   }
 };
@@ -244,13 +248,13 @@ export const logout = async (req, res) => {
     res.clearCookie("salon_token");
     res.status(200).json({
       message: "Logout successful",
-      isSuccess: true
+      isSuccess: true,
     });
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).json({
       message: "Internal server error",
-      isSuccess: false
+      isSuccess: false,
     });
   }
 };
@@ -265,7 +269,7 @@ export const createInitialAdmin = async (req, res) => {
     if (existingAdmin) {
       return res.status(409).json({
         message: "Admin already exists",
-        isSuccess: false
+        isSuccess: false,
       });
     }
 
@@ -274,7 +278,7 @@ export const createInitialAdmin = async (req, res) => {
       username,
       email,
       password,
-      role: "super-admin"
+      role: "super-admin",
     });
 
     console.log(`🔧 Initial admin created: ${username}`);
@@ -286,14 +290,14 @@ export const createInitialAdmin = async (req, res) => {
         id: admin._id,
         username: admin.username,
         email: admin.email,
-        role: admin.role
-      }
+        role: admin.role,
+      },
     });
   } catch (error) {
     console.error("Create admin error:", error);
     res.status(500).json({
       message: "Internal server error",
-      isSuccess: false
+      isSuccess: false,
     });
   }
 };
